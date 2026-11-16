@@ -46,8 +46,17 @@ describe('Sidebar Component', () => {
       expect(screen.getByText('Presupuestos')).toBeInTheDocument();
       expect(screen.getByText('Reportes')).toBeInTheDocument();
 
-      // Quick add button
+      // Quick add button stays Nueva Transacción even on /commitments
       expect(screen.getByText('Nueva Transacción')).toBeInTheDocument();
+    });
+
+    test('keeps Nueva Transacción CTA linking to /transactions/new when on /commitments', () => {
+      mockPathname = '/commitments';
+      render(<Sidebar />);
+
+      const quickAddLink = screen.getByRole('link', { name: /Nueva Transacción/i });
+      expect(quickAddLink).toHaveAttribute('href', '/transactions/new');
+      expect(screen.queryByText('Nuevo Compromiso')).not.toBeInTheDocument();
     });
 
     test('toggles group open and close on click', () => {

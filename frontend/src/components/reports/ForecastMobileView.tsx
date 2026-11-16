@@ -100,6 +100,22 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
     return depth;
   };
 
+  const getContactSubRows = (
+    acc: AccountForecastItem,
+    flowFilter: 'CASH_IN' | 'CASH_OUT' | 'DEFAULT',
+  ) => {
+    const raw = acc.contactBreakdown ?? [];
+    if (raw.length === 0) return [];
+    if (flowFilter === 'CASH_IN' && acc.systemRole === 'ACCOUNTS_PAYABLE') return [];
+    if (flowFilter === 'CASH_OUT' && acc.systemRole === 'ACCOUNTS_RECEIVABLE') return [];
+    return raw.filter((sub) => {
+      if (sub.valuesByPeriod) {
+        return Math.abs(sub.valuesByPeriod[activePeriodId] ?? 0) !== 0;
+      }
+      return Math.abs(sub.amount ?? 0) !== 0;
+    });
+  };
+
   // Roll-up values recursively for trees
   const getSubtreeValue = (
     accId: string,
@@ -112,12 +128,19 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
     let val = acc.values[periodId] || 0;
 
     if (flowFilter === 'CASH_IN') {
+      if (acc.systemRole === 'ACCOUNTS_PAYABLE') return 0;
       if (acc.accountType === 'ASSET' || acc.accountType === 'LIABILITY') {
-        val = val > 0 ? val : 0;
+        val = acc.inflowValues !== undefined ? acc.inflowValues[periodId] || 0 : val > 0 ? val : 0;
       }
     } else if (flowFilter === 'CASH_OUT') {
+      if (acc.systemRole === 'ACCOUNTS_RECEIVABLE') return 0;
       if (acc.accountType === 'ASSET' || acc.accountType === 'LIABILITY') {
-        val = val < 0 ? Math.abs(val) : 0;
+        val =
+          acc.outflowValues !== undefined
+            ? Math.abs(acc.outflowValues[periodId] || 0)
+            : val < 0
+              ? Math.abs(val)
+              : 0;
       }
     }
 
@@ -137,12 +160,20 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
   ) => {
     const depth = getAccountDepth(acc);
     const childrenPresent = hasChildren(acc.accountId);
+    const contactSubRows = getContactSubRows(acc, flowFilter);
+    const isExpandable = childrenPresent || contactSubRows.length > 0;
     const isExpanded = expandedAccounts[acc.accountId];
     const rawVal = getSubtreeValue(acc.accountId, activePeriodId, flowFilter);
     // Egresos, Gastos y Salidas se presentan como importes positivos
     const val =
       acc.accountType === 'EXPENSE' || flowFilter === 'CASH_OUT' ? Math.abs(rawVal) : rawVal;
-    const directChildren = accounts.filter((a) => a.parentId === acc.accountId);
+    const directChildren = accounts
+      .filter((a) => a.parentId === acc.accountId)
+      .filter((child) =>
+        flowFilter === 'DEFAULT'
+          ? true
+          : getSubtreeValue(child.accountId, activePeriodId, flowFilter) !== 0,
+      );
 
     return (
       <React.Fragment key={acc.accountId}>
@@ -151,7 +182,7 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
           style={{ paddingLeft: `${Math.max(12, depth * 16 + 12)}px` }}
         >
           <div className="flex items-center space-x-1.5 flex-1 pr-2 min-w-0">
-            {childrenPresent ? (
+            {isExpandable ? (
               <button
                 type="button"
                 onClick={(e) => {
@@ -174,10 +205,10 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
             )}
 
             <span
-              className={`text-xs block truncate ${
-                childrenPresent
-                  ? 'font-bold text-slate-900 dark:text-slate-100'
-                  : 'font-medium text-slate-700 dark:text-slate-300'
+              className={`text-xs block truncate font-medium ${
+                isExpandable
+                  ? 'text-slate-900 dark:text-slate-100'
+                  : 'text-slate-700 dark:text-slate-300'
               }`}
             >
               {acc.accountName}
@@ -200,7 +231,7 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
 
           <div className="flex items-center space-x-2 shrink-0 tabular-nums">
             <span
-              className={`text-xs px-2.5 py-1 rounded-lg font-bold ${
+              className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
                 val === 0
                   ? 'text-slate-400 bg-slate-100/60 dark:bg-slate-800/60'
                   : 'text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800'
@@ -210,6 +241,27 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
             </span>
           </div>
         </div>
+
+        {isExpanded &&
+          contactSubRows.map((sub, idx) => {
+            const subVal = Math.abs(sub.valuesByPeriod?.[activePeriodId] ?? sub.amount ?? 0);
+            const prefix = idx === contactSubRows.length - 1 ? '└─ ' : '├─ ';
+            return (
+              <div
+                key={`${acc.accountId}-contact-${sub.contactId ?? 'none'}-${idx}`}
+                className="flex items-center justify-between p-2.5 min-h-11 border-b border-slate-100 dark:border-slate-800/40 bg-slate-50/40 dark:bg-slate-900/30"
+                style={{ paddingLeft: `${Math.max(24, (depth + 1) * 16 + 12)}px` }}
+              >
+                <span className="text-xs font-normal text-slate-600 dark:text-slate-400 truncate pr-2">
+                  {prefix}
+                  {sub.contactName}
+                </span>
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 tabular-nums shrink-0">
+                  {subVal === 0 ? '—' : formatCurrency(subVal, baseCurrency)}
+                </span>
+              </div>
+            );
+          })}
 
         {isExpanded && directChildren.map((child) => renderAccountNode(child, flowFilter))}
       </React.Fragment>
@@ -224,6 +276,16 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
   const netProfitVal = activeMonth?.netProfit || incomeVal - expenseVal;
   const marginPct = incomeVal > 0 ? (netProfitVal / incomeVal) * 100 : 0;
 
+  const hasActiveOrAnyFlow = (
+    accId: string,
+    flowFilter: 'CASH_IN' | 'CASH_OUT' | 'DEFAULT',
+  ): boolean => {
+    if (activePeriodId) {
+      return getSubtreeValue(accId, activePeriodId, flowFilter) !== 0;
+    }
+    return months.some((m) => getSubtreeValue(accId, m.periodId, flowFilter) !== 0);
+  };
+
   // Root account lists
   const rootIncomeAccounts = accounts.filter(
     (a) => a.accountType === 'INCOME' && a.parentId === null,
@@ -232,11 +294,29 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
     (a) => a.accountType === 'EXPENSE' && a.parentId === null,
   );
   const rootAssetLiabilityInflow = accounts.filter(
-    (a) => (a.accountType === 'ASSET' || a.accountType === 'LIABILITY') && a.parentId === null,
+    (a) =>
+      (a.accountType === 'ASSET' || a.accountType === 'LIABILITY') &&
+      a.parentId === null &&
+      hasActiveOrAnyFlow(a.accountId, 'CASH_IN'),
   );
   const rootAssetLiabilityOutflow = accounts.filter(
-    (a) => (a.accountType === 'ASSET' || a.accountType === 'LIABILITY') && a.parentId === null,
+    (a) =>
+      (a.accountType === 'ASSET' || a.accountType === 'LIABILITY') &&
+      a.parentId === null &&
+      hasActiveOrAnyFlow(a.accountId, 'CASH_OUT'),
   );
+
+  const periodStatus =
+    activeMonth?.periodStatus ??
+    (activeMonth?.isReal ? 'REAL' : activeMonth?.isCurrent ? 'ACTUAL' : 'PROYECTADO');
+  const periodBadgeClass =
+    periodStatus === 'REAL'
+      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+      : periodStatus === 'ACTUAL'
+        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+        : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30';
+  const periodBadgeLabel =
+    periodStatus === 'REAL' ? 'Real' : periodStatus === 'ACTUAL' ? 'Actual' : 'Proyectado';
 
   return (
     <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 overflow-y-auto font-sans">
@@ -254,13 +334,9 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
             </div>
 
             <span
-              className={`text-xs px-2 py-0.5 rounded-md font-semibold shrink-0 border ${
-                activeMonth?.isReal
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                  : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-              }`}
+              className={`text-xs px-2 py-0.5 rounded-md font-semibold shrink-0 border ${periodBadgeClass}`}
             >
-              {activeMonth?.isReal ? 'Real' : 'Proyectado'}
+              {periodBadgeLabel}
             </span>
           </div>
 

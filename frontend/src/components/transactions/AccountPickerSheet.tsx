@@ -9,6 +9,7 @@ import { AccountType } from '@sistema-contable/shared';
 export type AccountPickerFilterMode =
   | 'ALL'
   | 'PAYMENT_ACCOUNTS'
+  | 'CASH_BANK'
   | 'EXPENSES'
   | 'INCOMES'
   | 'ASSETS';
@@ -130,6 +131,9 @@ export default function AccountPickerSheet({
     if (filterMode === 'PAYMENT_ACCOUNTS') {
       return [AccountType.ASSET, AccountType.LIABILITY];
     }
+    if (filterMode === 'CASH_BANK') {
+      return [AccountType.ASSET];
+    }
     if (filterMode === 'EXPENSES') {
       return [AccountType.EXPENSE];
     }
@@ -158,6 +162,9 @@ export default function AccountPickerSheet({
       // Filter by mode / allowedTypes
       if (filterMode === 'PAYMENT_ACCOUNTS') {
         return a.isCashOrBank || a.type === AccountType.ASSET || a.type === AccountType.LIABILITY;
+      }
+      if (filterMode === 'CASH_BANK') {
+        return Boolean(a.isCashOrBank) && a.type === AccountType.ASSET;
       }
       return effectiveAllowedTypes.includes(a.type);
     });
@@ -289,7 +296,13 @@ export default function AccountPickerSheet({
     }
     if (filterMode === 'EXPENSES') return AccountType.EXPENSE;
     if (filterMode === 'INCOMES') return AccountType.INCOME;
-    if (filterMode === 'PAYMENT_ACCOUNTS' || filterMode === 'ASSETS') return AccountType.ASSET;
+    if (
+      filterMode === 'PAYMENT_ACCOUNTS' ||
+      filterMode === 'ASSETS' ||
+      filterMode === 'CASH_BANK'
+    ) {
+      return AccountType.ASSET;
+    }
     if (allowedTypes && allowedTypes.length === 1) return allowedTypes[0];
     return undefined;
   };

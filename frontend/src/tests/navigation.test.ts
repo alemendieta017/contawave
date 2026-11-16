@@ -82,8 +82,16 @@ describe('Navigation Helpers & Types', () => {
   });
 
   describe('navigationRegistry verification', () => {
-    test('registry contains all expected groups and leaf items', () => {
+    test('registry contains all expected groups and leaf items in order', () => {
       expect(navigationRegistry.length).toBeGreaterThan(0);
+      const topLevelIds = navigationRegistry.map((e) => e.id);
+      const txIdx = topLevelIds.indexOf('transactions');
+      const commitmentsIdx = topLevelIds.indexOf('commitments');
+      const accountsIdx = topLevelIds.indexOf('accounts');
+      expect(txIdx).toBeGreaterThanOrEqual(0);
+      expect(commitmentsIdx).toBe(txIdx + 1);
+      expect(accountsIdx).toBe(commitmentsIdx + 1);
+
       const budgetGroup = navigationRegistry.find((e) => e.id === 'budgets');
       expect(budgetGroup).toBeDefined();
       expect(isNavGroup(budgetGroup!)).toBe(true);

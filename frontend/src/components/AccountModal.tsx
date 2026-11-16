@@ -38,6 +38,7 @@ interface AccountModalProps {
   initialName?: string;
   initialType?: AccountType;
   initialParentId?: string;
+  initialIsCashOrBank?: boolean;
   accountToEdit?: {
     id: string;
     name: string;
@@ -54,6 +55,7 @@ export default function AccountModal({
   initialName,
   initialType,
   initialParentId,
+  initialIsCashOrBank,
   accountToEdit,
 }: AccountModalProps) {
   const isEditing = !!accountToEdit;
@@ -62,7 +64,9 @@ export default function AccountModal({
   const [type, setType] = useState<AccountType>(
     accountToEdit?.type || initialType || AccountType.ASSET,
   );
-  const [isCashOrBank, setIsCashOrBank] = useState<boolean>(accountToEdit?.isCashOrBank ?? false);
+  const [isCashOrBank, setIsCashOrBank] = useState<boolean>(
+    accountToEdit?.isCashOrBank ?? initialIsCashOrBank ?? false,
+  );
   const [initialBalance, setInitialBalance] = useState<string>('');
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedCurrencyId, setSelectedCurrencyId] = useState('');
@@ -87,7 +91,7 @@ export default function AccountModal({
 
   const handleNameChange = (val: string) => {
     setName(val);
-    if (type === AccountType.ASSET && !isEditing) {
+    if (type === AccountType.ASSET && !isEditing && !initialIsCashOrBank) {
       const lower = val.toLowerCase();
       const isKeywordMatch =
         lower.includes('efectivo') ||

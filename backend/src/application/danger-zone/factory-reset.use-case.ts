@@ -18,6 +18,10 @@ import { BudgetEntity } from '../../infrastructure/database/entities/budget.enti
 import { BudgetItemEntity } from '../../infrastructure/database/entities/budget-item.entity';
 import { BudgetReassignmentEntity } from '../../infrastructure/database/entities/budget-reassignment.entity';
 import { CurrencyEntity } from '../../infrastructure/database/entities/currency.entity';
+import { ContactEntity } from '../../infrastructure/database/entities/contact.entity';
+import { CommitmentEntity } from '../../infrastructure/database/entities/commitment.entity';
+import { CommitmentInstallmentEntity } from '../../infrastructure/database/entities/commitment-installment.entity';
+import { CommitmentSettlementEntity } from '../../infrastructure/database/entities/commitment-settlement.entity';
 import { FactoryResetDto } from '../../infrastructure/controllers/dto/danger-zone.dto';
 
 @Injectable()
@@ -74,6 +78,33 @@ export class FactoryResetUseCase {
           .where('account_id IN (:...accountIds)', { accountIds })
           .execute();
       }
+
+      // 3b. Delete user's commitment settlements, installments, commitments and contacts
+      const userCommitments = await manager.find(CommitmentEntity, { where: { userId } });
+      const commitmentIds = userCommitments.map((c) => c.id);
+      if (commitmentIds.length > 0) {
+        const installments = await manager
+          .createQueryBuilder(CommitmentInstallmentEntity, 'inst')
+          .where('inst.commitment_id IN (:...commitmentIds)', { commitmentIds })
+          .getMany();
+        const installmentIds = installments.map((i) => i.id);
+        if (installmentIds.length > 0) {
+          await manager
+            .createQueryBuilder()
+            .delete()
+            .from(CommitmentSettlementEntity)
+            .where('installment_id IN (:...installmentIds)', { installmentIds })
+            .execute();
+        }
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from(CommitmentInstallmentEntity)
+          .where('commitment_id IN (:...commitmentIds)', { commitmentIds })
+          .execute();
+        await manager.delete(CommitmentEntity, { userId });
+      }
+      await manager.delete(ContactEntity, { userId });
 
       // 4. Delete user's journal entries and transactions
       const userTransactions = await manager.find(TransactionEntity, { where: { userId } });

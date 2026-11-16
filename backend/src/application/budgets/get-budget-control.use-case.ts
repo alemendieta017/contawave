@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { PeriodEntity } from '../../infrastructure/database/entities/period.entity';
 import { BudgetEntity } from '../../infrastructure/database/entities/budget.entity';
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
 import { JournalEntryEntity } from '../../infrastructure/database/entities/journal-entry.entity';
+import { CommitmentCashFlowAdapter } from '../commitments/commitment-cash-flow.adapter';
 import {
   BudgetControlResponse,
   BudgetControlSummary,
@@ -44,7 +45,11 @@ function getSpanishFriendlyPeriodName(name: string): string {
 
 @Injectable()
 export class GetBudgetControlUseCase {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @Optional()
+    private readonly commitmentCashFlowAdapter?: CommitmentCashFlowAdapter,
+  ) {}
 
   async execute(userId: string, periodId: string): Promise<BudgetControlResponse> {
     return this.dataSource.transaction(async (manager) => {
@@ -55,6 +60,31 @@ export class GetBudgetControlUseCase {
       if (!period) {
         throw new NotFoundException(`Period with ID '${periodId}' not found.`);
       }
+
+      const scheduledItems = this.commitmentCashFlowAdapter
+        ? (await this.commitmentCashFlowAdapter.getScheduledCashFlowItems(
+            userId,
+            String(period.startDate),
+            String(period.endDate),
+          )) || []
+        : [];
+
+      const committedByAccountDir = new Map<string, number>();
+      for (const item of scheduledItems) {
+        const dir =
+          item.direction === 'INFLOW'
+            ? CashFlowDirection.INGRESO_EFECTIVO
+            : CashFlowDirection.EGRESO_EFECTIVO;
+        const key = `${item.categoryAccountId}_${dir}`;
+        committedByAccountDir.set(key, (committedByAccountDir.get(key) || 0) + item.amount);
+      }
+      const consumedCommittedKeys = new Set<string>();
+      const consumeCommitted = (accountId: string, dir: CashFlowDirection): number => {
+        const key = `${accountId}_${dir}`;
+        if (consumedCommittedKeys.has(key)) return 0;
+        consumedCommittedKeys.add(key);
+        return committedByAccountDir.get(key) || 0;
+      };
 
       // Fetch all active accounts of user (excluding cash/bank liquid accounts)
       const accounts = await manager
@@ -175,7 +205,7 @@ export class GetBudgetControlUseCase {
             CashFlowDirection.INGRESO_EFECTIVO,
             budgeted,
             executed,
-            0,
+            consumeCommitted(acc.id, CashFlowDirection.INGRESO_EFECTIVO),
             true,
           ),
         );
@@ -203,7 +233,7 @@ export class GetBudgetControlUseCase {
             CashFlowDirection.EGRESO_EFECTIVO,
             budgeted,
             executed,
-            0,
+            consumeCommitted(acc.id, CashFlowDirection.EGRESO_EFECTIVO),
             false,
           ),
         );
@@ -249,7 +279,7 @@ export class GetBudgetControlUseCase {
             direction,
             budgeted,
             executed,
-            0,
+            consumeCommitted(acc.id, direction),
             direction === CashFlowDirection.INGRESO_EFECTIVO,
           ),
         );
@@ -290,7 +320,7 @@ export class GetBudgetControlUseCase {
             direction,
             budgeted,
             executed,
-            0,
+            consumeCommitted(acc.id, direction),
             direction === CashFlowDirection.INGRESO_EFECTIVO,
           ),
         );

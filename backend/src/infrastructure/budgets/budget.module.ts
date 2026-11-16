@@ -5,6 +5,9 @@ import { JournalEntryEntity } from '../database/entities/journal-entry.entity';
 import { BudgetItemEntity } from '../database/entities/budget-item.entity';
 import { PeriodEntity } from '../database/entities/period.entity';
 import { AccountEntity } from '../database/entities/account.entity';
+import { CommitmentEntity } from '../database/entities/commitment.entity';
+import { CommitmentInstallmentEntity } from '../database/entities/commitment-installment.entity';
+import { CommitmentSettlementEntity } from '../database/entities/commitment-settlement.entity';
 import { GetBudgetsSummaryUseCase } from '../../application/budgets/get-budgets-summary.use-case';
 import { GetBudgetDetailUseCase } from '../../application/budgets/get-budget-detail.use-case';
 import { UpdateBudgetItemsUseCase } from '../../application/budgets/update-budget-items.use-case';
@@ -23,6 +26,7 @@ import { BudgetReassignmentEntity } from '../database/entities/budget-reassignme
 import { BudgetController } from '../controllers/budget.controller';
 import { AuthModule } from '../auth/auth.module';
 import { LedgerModule } from '../ledger/ledger.module';
+import { CommitmentsModule } from '../commitments/commitments.module';
 
 @Module({
   imports: [
@@ -33,9 +37,13 @@ import { LedgerModule } from '../ledger/ledger.module';
       PeriodEntity,
       AccountEntity,
       BudgetReassignmentEntity,
+      CommitmentEntity,
+      CommitmentInstallmentEntity,
+      CommitmentSettlementEntity,
     ]),
     AuthModule,
     forwardRef(() => LedgerModule),
+    CommitmentsModule,
   ],
   providers: [
     GetBudgetsSummaryUseCase,

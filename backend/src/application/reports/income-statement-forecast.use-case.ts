@@ -113,7 +113,8 @@ export class IncomeStatementForecastUseCase {
               endDate: pEnd,
               status: 'OPEN',
               userId,
-            } as PeriodEntity;
+              __isSynthetic: true,
+            } as PeriodEntity & { __isSynthetic?: boolean };
           }
         } else if (lastClosedPeriod) {
           startPeriod = lastClosedPeriod;
@@ -145,7 +146,8 @@ export class IncomeStatementForecastUseCase {
         }
 
         if (!startPeriod) {
-          const currentMonth = new Date().toISOString().substring(0, 7);
+          const refDate = currentDate || new Date();
+          const currentMonth = `${refDate.getFullYear()}-${String(refDate.getMonth() + 1).padStart(2, '0')}`;
           const [y, m] = currentMonth.split('-').map(Number);
           startPeriod = {
             id: `p-${currentMonth}`,
@@ -154,7 +156,8 @@ export class IncomeStatementForecastUseCase {
             endDate: `${currentMonth}-${new Date(Date.UTC(y, m, 0)).getUTCDate()}`,
             status: 'OPEN',
             userId,
-          } as PeriodEntity;
+            __isSynthetic: true,
+          } as PeriodEntity & { __isSynthetic?: boolean };
         }
 
         let startYear = new Date().getFullYear();
@@ -210,7 +213,8 @@ export class IncomeStatementForecastUseCase {
               endDate: pEnd,
               status: 'PLANNING',
               userId,
-            } as PeriodEntity;
+              __isSynthetic: true,
+            } as PeriodEntity & { __isSynthetic?: boolean };
           }
 
           rollingPeriods.push(period);
@@ -299,18 +303,20 @@ export class IncomeStatementForecastUseCase {
 
       const months = [];
 
-      for (const period of periods) {
+      for (const rawPeriod of periods) {
+        const period = rawPeriod as PeriodEntity & { __isSynthetic?: boolean };
         const isReal = period.startDate <= todayStr;
 
         let income = 0;
         let expense = 0;
 
         if (isReal) {
-          const balances =
-            (await entityManager.find(AccountPeriodBalanceEntity, {
-              where: { periodId: period.id },
-              relations: ['account'],
-            })) || [];
+          const balances = period.__isSynthetic
+            ? []
+            : (await entityManager.find(AccountPeriodBalanceEntity, {
+                where: { periodId: period.id },
+                relations: ['account'],
+              })) || [];
 
           for (const bal of balances) {
             if (!bal?.account) continue;
@@ -333,10 +339,12 @@ export class IncomeStatementForecastUseCase {
             }
           }
         } else {
-          const budget = await entityManager.findOne(BudgetEntity, {
-            where: { periodId: period.id, userId },
-            relations: ['items', 'items.account'],
-          });
+          const budget = period.__isSynthetic
+            ? null
+            : await entityManager.findOne(BudgetEntity, {
+                where: { periodId: period.id, userId },
+                relations: ['items', 'items.account'],
+              });
 
           if (budget && budget.items) {
             for (const item of budget.items) {

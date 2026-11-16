@@ -178,4 +178,64 @@ describe('ForecastMobileView Component', () => {
     fireEvent.click(incomeHeader);
     expect(screen.getByText('Ventas de Servicios')).toBeInTheDocument();
   });
+
+  it('renders Actual badge and expands contactBreakdown sub-rows on mobile', () => {
+    const monthsActual: MonthForecastItem[] = [
+      {
+        periodId: 'p-cur',
+        periodName: '2026-02',
+        status: 'OPEN',
+        isReal: false,
+        isCurrent: true,
+        periodStatus: 'ACTUAL',
+        initialCash: 1000,
+        ingresosOperativos: 0,
+        entradasActivoPasivo: 900,
+        totalEntradas: 900,
+        egresosOperativos: 0,
+        salidasActivoPasivo: 0,
+        totalSalidas: 0,
+        netFlow: 900,
+        finalCash: 1900,
+      },
+    ];
+
+    const accountsWithContact: AccountForecastItem[] = [
+      {
+        accountId: 'ar-1',
+        accountName: 'Cuentas por Cobrar',
+        accountType: 'ASSET',
+        systemRole: 'ACCOUNTS_RECEIVABLE',
+        parentId: null,
+        values: { 'p-cur': 900 },
+        inflowValues: { 'p-cur': 900 },
+        outflowValues: { 'p-cur': 0 },
+        contactBreakdown: [
+          {
+            contactId: 'c-1',
+            contactName: 'Empresa Beta',
+            amount: 900,
+            valuesByPeriod: { 'p-cur': 900 },
+          },
+        ],
+      },
+    ];
+
+    render(
+      <ForecastMobileView
+        type="CASH_FLOW"
+        months={monthsActual}
+        accounts={accountsWithContact}
+        activePeriodName="2026-02"
+        baseCurrency={mockBaseCurrency}
+      />,
+    );
+
+    expect(screen.getByText('Actual')).toBeInTheDocument();
+    expect(screen.getByText('Cuentas por Cobrar')).toBeInTheDocument();
+    expect(screen.queryByText(/Empresa Beta/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle('Expandir'));
+    expect(screen.getByText(/└─ Empresa Beta/)).toBeInTheDocument();
+  });
 });

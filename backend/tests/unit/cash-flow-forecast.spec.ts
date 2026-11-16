@@ -422,9 +422,11 @@ describe('Financial Forecast Reports (Income Statement & Cash Flow)', () => {
         netFlow: 6000,
         finalCash: 11000,
         isReal: true,
+        isCurrent: false,
+        periodStatus: 'REAL',
       });
 
-      // Feb: Real
+      // Feb: Actual (mes en curso: 2026-02-01 <= 2026-02-15 <= 2026-02-28)
       expect(result.months[1]).toEqual({
         periodId: 'p-feb',
         periodName: '2026-02',
@@ -438,7 +440,9 @@ describe('Financial Forecast Reports (Income Statement & Cash Flow)', () => {
         totalSalidas: 5000,
         netFlow: 5000,
         finalCash: 16000,
-        isReal: true,
+        isReal: false,
+        isCurrent: true,
+        periodStatus: 'ACTUAL',
       });
 
       // Mar: Projected
@@ -456,6 +460,8 @@ describe('Financial Forecast Reports (Income Statement & Cash Flow)', () => {
         netFlow: 9000,
         finalCash: 25000,
         isReal: false,
+        isCurrent: false,
+        periodStatus: 'PROYECTADO',
       });
     });
 

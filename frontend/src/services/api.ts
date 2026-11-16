@@ -24,6 +24,17 @@ import {
   EnsurePeriodResponse,
   PeriodResponse,
   NetWorthEvolutionResponse,
+  ContactDto,
+  CreateContactRequest,
+  UpdateContactRequest,
+  CommitmentsListResponse,
+  CommitmentDto,
+  CreateCommitmentRequest,
+  UpdateCommitmentRequest,
+  AddCommitmentInstallmentRequest,
+  SettleCommitmentInstallmentRequest,
+  ForgiveCommitmentInstallmentRequest,
+  RescheduleCommitmentInstallmentRequest,
 } from '@sistema-contable/shared';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -740,6 +751,152 @@ export const api = {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+  },
+
+  contacts: {
+    async list(): Promise<ContactDto[]> {
+      const res = await fetch(`${API_BASE_URL}/contacts`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+
+    async create(data: CreateContactRequest): Promise<ContactDto> {
+      const res = await fetch(`${API_BASE_URL}/contacts`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async update(id: string, data: UpdateContactRequest): Promise<ContactDto> {
+      const res = await fetch(`${API_BASE_URL}/contacts/${id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async delete(id: string): Promise<void> {
+      const res = await fetch(`${API_BASE_URL}/contacts/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+  },
+
+  commitments: {
+    async list(): Promise<CommitmentsListResponse> {
+      const tzOffset = new Date().getTimezoneOffset();
+      const res = await fetch(`${API_BASE_URL}/commitments?timezoneOffset=${tzOffset}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+
+    async get(id: string): Promise<CommitmentDto> {
+      const tzOffset = new Date().getTimezoneOffset();
+      const res = await fetch(`${API_BASE_URL}/commitments/${id}?timezoneOffset=${tzOffset}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+
+    async create(data: CreateCommitmentRequest): Promise<CommitmentDto> {
+      const res = await fetch(`${API_BASE_URL}/commitments`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async update(id: string, data: UpdateCommitmentRequest): Promise<CommitmentDto> {
+      const res = await fetch(`${API_BASE_URL}/commitments/${id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async delete(id: string): Promise<{ deleted: boolean }> {
+      const res = await fetch(`${API_BASE_URL}/commitments/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+
+    async addInstallment(
+      commitmentId: string,
+      data: AddCommitmentInstallmentRequest,
+    ): Promise<CommitmentDto> {
+      const res = await fetch(`${API_BASE_URL}/commitments/${commitmentId}/installments`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async deleteInstallment(commitmentId: string, installmentId: string): Promise<CommitmentDto> {
+      const res = await fetch(
+        `${API_BASE_URL}/commitments/${commitmentId}/installments/${installmentId}`,
+        {
+          method: 'DELETE',
+          headers: getHeaders(),
+        },
+      );
+      return handleResponse(res);
+    },
+
+    async settleInstallment(
+      installmentId: string,
+      data: SettleCommitmentInstallmentRequest,
+    ): Promise<CommitmentDto> {
+      const res = await fetch(`${API_BASE_URL}/commitments/installments/${installmentId}/settle`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async forgiveInstallment(
+      installmentId: string,
+      data: ForgiveCommitmentInstallmentRequest,
+    ): Promise<CommitmentDto> {
+      const res = await fetch(`${API_BASE_URL}/commitments/installments/${installmentId}/forgive`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async rescheduleInstallment(
+      installmentId: string,
+      data: RescheduleCommitmentInstallmentRequest,
+    ): Promise<CommitmentDto> {
+      const res = await fetch(`${API_BASE_URL}/commitments/installments/${installmentId}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async undoSettlement(settlementId: string): Promise<CommitmentDto> {
+      const res = await fetch(`${API_BASE_URL}/commitments/settlements/${settlementId}/undo`, {
+        method: 'POST',
+        headers: getHeaders(),
       });
       return handleResponse(res);
     },

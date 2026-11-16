@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource, LessThanOrEqual, MoreThanOrEqual, LessThan } from 'typeorm';
+import { VirtualContactSubRow } from '@sistema-contable/shared';
 import { PeriodEntity } from '../../infrastructure/database/entities/period.entity';
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
 import { AccountPeriodBalanceEntity } from '../../infrastructure/database/entities/account-period-balance.entity';
 import { JournalEntryEntity } from '../../infrastructure/database/entities/journal-entry.entity';
+import { CommitmentEntity } from '../../infrastructure/database/entities/commitment.entity';
 
 @Injectable()
 export class BalanceSheetUseCase {
@@ -16,6 +18,9 @@ export class BalanceSheetUseCase {
     @InjectRepository(AccountPeriodBalanceEntity)
     private readonly balanceRepository: Repository<AccountPeriodBalanceEntity>,
     private readonly dataSource: DataSource,
+    @Optional()
+    @InjectRepository(CommitmentEntity)
+    private readonly commitmentRepository?: Repository<CommitmentEntity>,
   ) {}
 
   async execute(
@@ -206,7 +211,13 @@ export class BalanceSheetUseCase {
       }
 
       // 3. Apply depth collapse to ASSET, LIABILITY
-      const collapsed = this.applyDepthCollapse(accounts, balanceMap, depth);
+      const contactBreakdowns = await this.buildContactBreakdownByControlAccount(
+        userId,
+        date,
+        accounts,
+        depth,
+      );
+      const collapsed = this.applyDepthCollapse(accounts, balanceMap, depth, contactBreakdowns);
 
       // 5. Calculate totals and real double-entry balance check
       const totalAssets = Number(
@@ -336,7 +347,13 @@ export class BalanceSheetUseCase {
     }
 
     // 3. Apply depth collapse to ASSET, LIABILITY
-    const collapsed = this.applyDepthCollapse(accounts, balanceMap, targetDepth);
+    const contactBreakdowns = await this.buildContactBreakdownByControlAccount(
+      userId,
+      String(period.endDate),
+      accounts,
+      targetDepth,
+    );
+    const collapsed = this.applyDepthCollapse(accounts, balanceMap, targetDepth, contactBreakdowns);
 
     // 4. Calculate totals and real double-entry Net Worth directly from snapshots
     const totalAssets = Number(
@@ -364,59 +381,139 @@ export class BalanceSheetUseCase {
     };
   }
 
+  private getDepthHelpers(accounts: AccountEntity[], targetDepth: number) {
+    const accountById = new Map<string, AccountEntity>();
+    accounts.forEach((a) => accountById.set(a.id, a));
+
+    const getAccountDepth = (accountId: string): number => {
+      let current = accountById.get(accountId);
+      let d = 1;
+      const visited = new Set<string>();
+      while (current && current.parentId && !visited.has(current.id)) {
+        visited.add(current.id);
+        current = accountById.get(current.parentId);
+        if (current) d++;
+      }
+      return d;
+    };
+
+    const getReportingAncestor = (accountId: string): string => {
+      let current = accountById.get(accountId);
+      const visited = new Set<string>();
+      while (
+        current &&
+        current.parentId &&
+        getAccountDepth(current.id) > targetDepth &&
+        !visited.has(current.id)
+      ) {
+        visited.add(current.id);
+        const parent = accountById.get(current.parentId);
+        if (parent) current = parent;
+        else break;
+      }
+      return current ? current.id : accountId;
+    };
+
+    return { getAccountDepth, getReportingAncestor };
+  }
+
+  private async buildContactBreakdownByControlAccount(
+    userId: string,
+    cutoffDate: string,
+    accounts: AccountEntity[],
+    targetDepth: number,
+  ): Promise<Map<string, VirtualContactSubRow[]>> {
+    const result = new Map<string, VirtualContactSubRow[]>();
+    const repo = this.commitmentRepository || this.dataSource?.getRepository?.(CommitmentEntity);
+    if (!repo || typeof repo.find !== 'function') {
+      return result;
+    }
+
+    const commitments =
+      (await repo.find({
+        where: { userId },
+        relations: [
+          'contact',
+          'initialTransaction',
+          'installments',
+          'installments.settlements',
+          'installments.settlements.transaction',
+        ],
+      })) || [];
+
+    if (commitments.length === 0) return result;
+
+    const { getReportingAncestor } = this.getDepthHelpers(accounts, targetDepth);
+    const grouped = new Map<string, Map<string, VirtualContactSubRow>>();
+
+    for (const c of commitments) {
+      if (
+        c.initialTransaction?.status === 'REVERSED' ||
+        (c.initialTransaction?.accountingDate &&
+          String(c.initialTransaction.accountingDate) > cutoffDate)
+      ) {
+        continue;
+      }
+
+      let pendingTotal = 0;
+      let hasNoDate = false;
+      for (const inst of c.installments || []) {
+        const settled = (inst.settlements || [])
+          .filter(
+            (s) =>
+              (!s.transaction || s.transaction.status === 'POSTED') &&
+              String(s.settledAt) <= cutoffDate,
+          )
+          .reduce((sum, s) => sum + Number(s.amount || 0), 0);
+        const pending = Math.max(0, Number((Number(inst.amount) - settled).toFixed(4)));
+        if (pending > 0.0001) {
+          pendingTotal += pending;
+          if (inst.dueDate === null || inst.dueDate === undefined) {
+            hasNoDate = true;
+          }
+        }
+      }
+
+      if (pendingTotal <= 0.0001) continue;
+
+      const ancestorId = getReportingAncestor(c.controlAccountId);
+      let contactMap = grouped.get(ancestorId);
+      if (!contactMap) {
+        contactMap = new Map<string, VirtualContactSubRow>();
+        grouped.set(ancestorId, contactMap);
+      }
+
+      const existing = contactMap.get(c.contactId);
+      if (existing) {
+        existing.amount = Number((existing.amount + pendingTotal).toFixed(4));
+        if (hasNoDate) existing.hasNoDate = true;
+      } else {
+        contactMap.set(c.contactId, {
+          contactId: c.contactId,
+          contactName: c.contact?.name || 'Contacto',
+          amount: Number(pendingTotal.toFixed(4)),
+          hasNoDate,
+        });
+      }
+    }
+
+    for (const [accountId, contactMap] of grouped.entries()) {
+      result.set(
+        accountId,
+        Array.from(contactMap.values()).sort((a, b) => b.amount - a.amount),
+      );
+    }
+
+    return result;
+  }
+
   private applyDepthCollapse(
     accounts: AccountEntity[],
     balanceMap: Map<string, number>,
     targetDepth: number,
+    contactBreakdowns?: Map<string, VirtualContactSubRow[]>,
   ) {
-    const accountMap = new Map<string, AccountEntity>();
-    for (const acc of accounts) {
-      accountMap.set(acc.id, acc);
-    }
-
-    const depthCache = new Map<string, number>();
-    const getAccountDepth = (accountId: string): number => {
-      if (depthCache.has(accountId)) {
-        return depthCache.get(accountId)!;
-      }
-      const account = accountMap.get(accountId);
-      if (!account || !account.parentId) {
-        depthCache.set(accountId, 1);
-        return 1;
-      }
-      const parent = accountMap.get(account.parentId);
-      if (!parent) {
-        depthCache.set(accountId, 1);
-        return 1;
-      }
-      const depth = 1 + getAccountDepth(account.parentId);
-      depthCache.set(accountId, depth);
-      return depth;
-    };
-
-    const getReportingAncestor = (accountId: string): string => {
-      const depth = getAccountDepth(accountId);
-      if (depth <= targetDepth) {
-        return accountId;
-      }
-      let current = accountMap.get(accountId);
-      const visited = new Set<string>();
-      while (current && getAccountDepth(current.id) > targetDepth) {
-        if (visited.has(current.id)) {
-          break;
-        }
-        visited.add(current.id);
-        if (!current.parentId) {
-          break;
-        }
-        const parent = accountMap.get(current.parentId);
-        if (!parent) {
-          break;
-        }
-        current = parent;
-      }
-      return current ? current.id : accountId;
-    };
+    const { getAccountDepth, getReportingAncestor } = this.getDepthHelpers(accounts, targetDepth);
 
     const reportingBalances = new Map<string, number>();
     for (const acc of accounts) {
@@ -428,8 +525,18 @@ export class BalanceSheetUseCase {
 
     const reportingAccounts = accounts.filter((acc) => getAccountDepth(acc.id) <= targetDepth);
 
-    const assets: { accountId: string; name: string; balance: number }[] = [];
-    const liabilities: { accountId: string; name: string; balance: number }[] = [];
+    const assets: {
+      accountId: string;
+      name: string;
+      balance: number;
+      contactBreakdown?: VirtualContactSubRow[];
+    }[] = [];
+    const liabilities: {
+      accountId: string;
+      name: string;
+      balance: number;
+      contactBreakdown?: VirtualContactSubRow[];
+    }[] = [];
     const equity: { accountId: string; name: string; balance: number }[] = [];
 
     for (const account of reportingAccounts) {
@@ -439,10 +546,17 @@ export class BalanceSheetUseCase {
         continue;
       }
 
-      const item = {
+      const breakdown = contactBreakdowns?.get(account.id);
+      const item: {
+        accountId: string;
+        name: string;
+        balance: number;
+        contactBreakdown?: VirtualContactSubRow[];
+      } = {
         accountId: account.id,
         name: account.name,
         balance,
+        ...(breakdown && breakdown.length > 0 ? { contactBreakdown: breakdown } : {}),
       };
 
       if (account.type === 'ASSET') {

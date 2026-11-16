@@ -223,4 +223,36 @@ describe('AccountsList (US1 & US2)', () => {
     expect(screen.queryByText(/Subtotal:/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/15\.000\.000/)).not.toBeInTheDocument();
   });
+
+  test('should render Cobros/Pagos system role badges and Pagos y Cobros link in menu for AR/AP accounts', () => {
+    const arApAccounts = [
+      {
+        id: 'acc-ar',
+        name: 'Cuentas por Cobrar',
+        type: 'ASSET' as const,
+        balance: 250000,
+        isCashOrBank: false,
+        status: 'ACTIVE' as const,
+        systemRole: 'ACCOUNTS_RECEIVABLE',
+      },
+      {
+        id: 'acc-ap',
+        name: 'Cuentas por Pagar',
+        type: 'LIABILITY' as const,
+        balance: 100000,
+        isCashOrBank: false,
+        status: 'ACTIVE' as const,
+        systemRole: 'ACCOUNTS_PAYABLE',
+      },
+    ];
+
+    render(<AccountsList accounts={arApAccounts} />);
+
+    expect(screen.getByText('Sistema (Cobros)')).toBeInTheDocument();
+    expect(screen.getByText('Sistema (Pagos)')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('menu-btn-acc-ar'));
+    const link = screen.getByRole('link', { name: /Ver desglose en Pagos y Cobros/i });
+    expect(link).toHaveAttribute('href', '/commitments');
+  });
 });

@@ -82,11 +82,15 @@ export enum AccountStatus {
 }
 export const AccountStatusSchema = z.nativeEnum(AccountStatus);
 
-export const SystemRoleSchema = z
-  .enum(['CAPITAL', 'NET_INCOME', 'RETAINED_EARNINGS'])
-  .nullable()
-  .optional();
-export type SystemRole = 'CAPITAL' | 'NET_INCOME' | 'RETAINED_EARNINGS';
+export const SystemRoleSchema = z.enum([
+  'NET_INCOME',
+  'RETAINED_EARNINGS',
+  'CAPITAL',
+  'ACCOUNTS_RECEIVABLE',
+  'ACCOUNTS_PAYABLE',
+  'BANK_INTEREST_EXPENSE',
+]);
+export type SystemRole = z.infer<typeof SystemRoleSchema>;
 
 export const AccountType = {
   ASSET: 'ASSET',
@@ -106,7 +110,7 @@ export const CreateAccountRequestSchema = z.object({
   parentId: z.string().uuid().optional().nullable(),
   isCashOrBank: z.boolean().optional(),
   metadata: z.record(z.any()).optional(),
-  systemRole: SystemRoleSchema,
+  systemRole: SystemRoleSchema.nullable().optional(),
   initialBalance: z.number().optional(),
 });
 
@@ -584,6 +588,24 @@ export interface StarterAccountDefinition {
 export const DEFAULT_STARTER_ACCOUNTS: StarterAccountDefinition[] = [
   // Cuenta de Sistema obligatoria para patrimonio y saldos iniciales
   { name: 'Capital', type: 'EQUITY', systemRole: 'CAPITAL' },
+  {
+    name: 'Cuentas por Cobrar',
+    type: AccountType.ASSET,
+    isCashOrBank: false,
+    systemRole: 'ACCOUNTS_RECEIVABLE',
+  },
+  {
+    name: 'Cuentas por Pagar',
+    type: AccountType.LIABILITY,
+    isCashOrBank: false,
+    systemRole: 'ACCOUNTS_PAYABLE',
+  },
+  {
+    name: 'Intereses y Cargos Financieros',
+    type: AccountType.EXPENSE,
+    isCashOrBank: false,
+    systemRole: 'BANK_INTEREST_EXPENSE',
+  },
 ];
 
 // Tactical Commitments & Recurring Schedules
@@ -698,4 +720,253 @@ export interface NetWorthEvolutionResponse {
   };
   change12Months: number;
   changePercentage: number;
+}
+
+// Spec 00: Contratos de Rolling Forecast & Fuentes de Flujo Programado
+export const CommitmentFlowDirectionSchema = z.enum(['INFLOW', 'OUTFLOW']);
+export type CommitmentFlowDirection = z.infer<typeof CommitmentFlowDirectionSchema>;
+
+export const CommitmentSourceTypeSchema = z.enum(['COMMITMENT', 'LOAN', 'CREDIT_CARD']);
+export type CommitmentSourceType = z.infer<typeof CommitmentSourceTypeSchema>;
+
+export interface ScheduledCashFlowItem {
+  dueDate: string; // YYYY-MM-DD
+  periodName: string; // YYYY-MM
+  amount: number; // Monto pendiente > 0 en moneda base
+  direction: CommitmentFlowDirection;
+  categoryAccountId: string; // Cuenta de ingreso/gasto o cuenta de activo/pasivo de control
+  controlAccountId?: string; // Cuenta de control (Cuentas por Cobrar / Cuentas por Pagar)
+  sourceType: CommitmentSourceType;
+  sourceId: string; // ID de la cuota
+  commitmentId?: string; // ID del compromiso padre
+  contactId?: string;
+  contactName?: string;
+  label: string;
+}
+
+export interface CashFlowCommitmentSource {
+  getScheduledCashFlowItems(
+    userId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<ScheduledCashFlowItem[]>;
+}
+
+export interface VirtualContactSubRow {
+  contactId: string;
+  contactName: string;
+  amount: number;
+  hasNoDate?: boolean;
+  valuesByPeriod?: Record<string, number>;
+}
+
+// Spec 01: Contactos y Compromisos (Pagos y Cobros)
+export const CreateContactRequestSchema = z.object({
+  name: z.string().trim().min(1, 'El nombre es obligatorio').max(120),
+  notes: z.string().max(1000).optional().nullable(),
+});
+export type CreateContactRequest = z.infer<typeof CreateContactRequestSchema>;
+
+export const UpdateContactRequestSchema = CreateContactRequestSchema.partial();
+export type UpdateContactRequest = z.infer<typeof UpdateContactRequestSchema>;
+
+export interface ContactDto {
+  id: string;
+  name: string;
+  notes: string | null;
+  createdAt: string;
+  activeReceivable?: number;
+  activePayable?: number;
+  commitmentCount?: number;
+}
+
+export const CommitmentOriginTypeSchema = z.enum([
+  'CATEGORY',
+  'CASH_TRANSFER',
+  'CAPITAL_ADJUSTMENT',
+]);
+export type CommitmentOriginType = z.infer<typeof CommitmentOriginTypeSchema>;
+
+export const CommitmentStatusSchema = z.enum(['PENDING', 'PARTIAL', 'PAID', 'OVERDUE']);
+export type CommitmentStatus = z.infer<typeof CommitmentStatusSchema>;
+
+export const SettlementTypeSchema = z.enum(['CASH', 'FORGIVEN']);
+export type SettlementType = z.infer<typeof SettlementTypeSchema>;
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+export const CommitmentInstallmentInputSchema = z.object({
+  dueDate: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD').nullable().optional(),
+  amount: z.number().positive('El monto de la cuota debe ser mayor a 0'),
+});
+export type CommitmentInstallmentInput = z.infer<typeof CommitmentInstallmentInputSchema>;
+
+export const CreateCommitmentRequestSchema = z
+  .object({
+    contactId: z.string().uuid('Contacto inválido'),
+    direction: CommitmentFlowDirectionSchema,
+    originType: CommitmentOriginTypeSchema,
+    description: z.string().trim().min(1, 'La descripción es obligatoria').max(255),
+    notes: z.string().max(2000).optional().nullable(),
+    totalAmount: z.number().positive('El monto total debe ser mayor a 0'),
+    categoryAccountId: z.string().uuid().optional().nullable(),
+    cashAccountId: z.string().uuid().optional().nullable(),
+    accountingDate: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD').optional(),
+    installments: z.array(CommitmentInstallmentInputSchema).min(1, 'Debe incluir al menos 1 cuota'),
+  })
+  .superRefine((data, ctx) => {
+    const sum = data.installments.reduce((acc, item) => acc + item.amount, 0);
+    if (Math.abs(sum - data.totalAmount) > 0.01) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La suma de las cuotas debe coincidir con el monto total del compromiso',
+        path: ['installments'],
+      });
+    }
+    if (data.originType === 'CATEGORY' && !data.categoryAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Debe seleccionar una categoría para el origen CATEGORY',
+        path: ['categoryAccountId'],
+      });
+    }
+    if (data.originType === 'CASH_TRANSFER' && !data.cashAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Debe seleccionar una cuenta de efectivo/banco para el origen CASH_TRANSFER',
+        path: ['cashAccountId'],
+      });
+    }
+  });
+export type CreateCommitmentRequest = z.infer<typeof CreateCommitmentRequestSchema>;
+
+export const UpdateCommitmentRequestSchema = z.object({
+  contactId: z.string().uuid().optional(),
+  description: z.string().trim().min(1).max(255).optional(),
+  notes: z.string().max(2000).optional().nullable(),
+  originType: CommitmentOriginTypeSchema.optional(),
+  categoryAccountId: z.string().uuid().optional().nullable(),
+  cashAccountId: z.string().uuid().optional().nullable(),
+});
+export type UpdateCommitmentRequest = z.infer<typeof UpdateCommitmentRequestSchema>;
+
+export const AddCommitmentInstallmentRequestSchema = z.object({
+  amount: z.number().positive('El monto debe ser mayor a 0'),
+  dueDate: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD').nullable().optional(),
+});
+export type AddCommitmentInstallmentRequest = z.infer<typeof AddCommitmentInstallmentRequestSchema>;
+
+export const SettleCommitmentInstallmentRequestSchema = z.object({
+  cashAccountId: z.string().uuid('Debe seleccionar una cuenta de efectivo o banco'),
+  amount: z.number().positive('El monto debe ser mayor a 0'),
+  settledAt: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD'),
+  newDueDateForRemainder: z
+    .string()
+    .regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD')
+    .nullable()
+    .optional(),
+});
+export type SettleCommitmentInstallmentRequest = z.infer<
+  typeof SettleCommitmentInstallmentRequestSchema
+>;
+
+export const ForgiveCommitmentInstallmentRequestSchema = z.object({
+  settledAt: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD').optional(),
+  expenseAccountId: z.string().uuid().optional().nullable(),
+  reason: z.string().max(500).optional(),
+});
+export type ForgiveCommitmentInstallmentRequest = z.infer<
+  typeof ForgiveCommitmentInstallmentRequestSchema
+>;
+
+export const RescheduleCommitmentInstallmentRequestSchema = z.object({
+  dueDate: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD').nullable(),
+  amount: z.number().positive('El monto debe ser mayor a 0').optional(),
+});
+export type RescheduleCommitmentInstallmentRequest = z.infer<
+  typeof RescheduleCommitmentInstallmentRequestSchema
+>;
+
+export interface CommitmentSettlementDto {
+  id: string;
+  installmentId: string;
+  transactionId: string;
+  journalEntryId: string;
+  settlementType: SettlementType;
+  amount: number;
+  settledAt: string;
+  createdAt: string;
+  cashAccountId?: string | null;
+  cashAccountName?: string | null;
+}
+
+export interface CommitmentInstallmentDto {
+  id: string;
+  commitmentId: string;
+  installmentNumber: number;
+  dueDate: string | null;
+  amount: number;
+  settledAmount: number;
+  pendingAmount: number;
+  status: CommitmentStatus;
+  settlements: CommitmentSettlementDto[];
+}
+
+export interface LinkedTransactionEntryDto {
+  accountId: string;
+  accountName: string;
+  entryType: 'DEBIT' | 'CREDIT';
+  amount: number;
+}
+
+export interface LinkedTransactionDto {
+  id: string;
+  accountingDate: string;
+  description: string;
+  status: string;
+  entries: LinkedTransactionEntryDto[];
+}
+
+export interface CommitmentDto {
+  id: string;
+  contactId: string;
+  contactName: string;
+  direction: CommitmentFlowDirection;
+  originType: CommitmentOriginType;
+  originBadgeText: string;
+  description: string;
+  notes: string | null;
+  totalAmount: number;
+  settledAmount: number;
+  pendingAmount: number;
+  status: CommitmentStatus;
+  hasNoDateInstallments: boolean;
+  nextDueDate: string | null;
+  categoryAccountId: string | null;
+  categoryAccountName: string | null;
+  cashAccountId: string | null;
+  cashAccountName: string | null;
+  controlAccountId: string;
+  controlAccountName: string;
+  initialTransactionId: string;
+  initialTransaction?: LinkedTransactionDto | null;
+  createdAt: string;
+  installments: CommitmentInstallmentDto[];
+}
+
+export interface CommitmentKpiSummary {
+  receivableTotal: number;
+  payableTotal: number;
+  netBalance: number;
+  receivableInstallmentsCount: number;
+  overdueReceivableCount: number;
+  overduePayableCount: number;
+  noDateCount: number;
+  payableInstallmentsCount: number;
+  nextPayableDueDate: string | null;
+}
+
+export interface CommitmentsListResponse {
+  kpis: CommitmentKpiSummary;
+  commitments: CommitmentDto[];
 }

@@ -6,6 +6,9 @@ import { AccountEntity } from '../database/entities/account.entity';
 import { PeriodEntity } from '../database/entities/period.entity';
 import { AccountPeriodBalanceEntity } from '../database/entities/account-period-balance.entity';
 import { BudgetEntity } from '../database/entities/budget.entity';
+import { CommitmentEntity } from '../database/entities/commitment.entity';
+import { CommitmentInstallmentEntity } from '../database/entities/commitment-installment.entity';
+import { CommitmentSettlementEntity } from '../database/entities/commitment-settlement.entity';
 import { GetCategoryStatisticsUseCase } from '../../application/reports/get-category-statistics.use-case';
 import { ExportExcelService } from '../../application/reports/export-excel.service';
 import { ReconstructBalancesUseCase } from '../../application/periods/reconstruct-balances.use-case';
@@ -16,6 +19,7 @@ import { CashFlowStatementForecastUseCase } from '../../application/reports/cash
 import { NetWorthEvolutionUseCase } from '../../application/reports/net-worth-evolution.use-case';
 import { ReportsController } from '../controllers/reports.controller';
 import { AuthModule } from '../auth/auth.module';
+import { CommitmentsModule } from '../commitments/commitments.module';
 
 @Module({
   imports: [
@@ -26,8 +30,12 @@ import { AuthModule } from '../auth/auth.module';
       PeriodEntity,
       AccountPeriodBalanceEntity,
       BudgetEntity,
+      CommitmentEntity,
+      CommitmentInstallmentEntity,
+      CommitmentSettlementEntity,
     ]),
     AuthModule,
+    CommitmentsModule,
   ],
   providers: [
     GetCategoryStatisticsUseCase,

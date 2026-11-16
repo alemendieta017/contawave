@@ -44,6 +44,17 @@ describe('BottomNav & MobileNavDrawer (US2)', () => {
     expect(screen.getByRole('button', { name: /Abrir más opciones de menú/i })).toBeInTheDocument();
   });
 
+  test('keeps center quick add CTA pointing to /transactions/new even on /commitments', () => {
+    mockPathname = '/commitments';
+    render(<BottomNav />);
+
+    const quickAdd = screen.getByRole('link', { name: /Nueva transacción rápida/i });
+    expect(quickAdd).toHaveAttribute('href', '/transactions/new');
+    expect(
+      screen.queryByRole('link', { name: /Nuevo compromiso rápido/i }),
+    ).not.toBeInTheDocument();
+  });
+
   test('opens and closes mobile drawer on user interaction', () => {
     render(<BottomNav />);
 

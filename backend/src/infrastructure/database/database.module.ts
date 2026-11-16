@@ -11,6 +11,10 @@ import { PasswordResetTokenEntity } from './entities/password-reset-token.entity
 import { BudgetReassignmentEntity } from './entities/budget-reassignment.entity';
 import { BudgetEntity } from './entities/budget.entity';
 import { BudgetItemEntity } from './entities/budget-item.entity';
+import { ContactEntity } from './entities/contact.entity';
+import { CommitmentEntity } from './entities/commitment.entity';
+import { CommitmentInstallmentEntity } from './entities/commitment-installment.entity';
+import { CommitmentSettlementEntity } from './entities/commitment-settlement.entity';
 
 @Module({
   imports: [
@@ -59,6 +63,10 @@ import { BudgetItemEntity } from './entities/budget-item.entity';
       BudgetEntity,
       BudgetItemEntity,
       BudgetReassignmentEntity,
+      ContactEntity,
+      CommitmentEntity,
+      CommitmentInstallmentEntity,
+      CommitmentSettlementEntity,
     ]),
   ],
   exports: [TypeOrmModule],

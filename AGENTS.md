@@ -65,6 +65,12 @@ La lógica backend se estructura en **Bounded Contexts (módulos funcionales)** 
 
 ### 3.2 Tailwind CSS y Estándares de Diseño
 
+- **Manual de Marca (Fuente de Verdad Visual):** Toda nueva pantalla o componente debe seguir estrictamente [docs/Manual de Marca y Sistema de Diseño UI.md](docs/Manual%20de%20Marca%20y%20Sistema%20de%20Dise%C3%B1o%20UI.md).
+- **Tipografía y Counters/KPIs:**
+  - Fuente oficial única: `Plus Jakarta Sans` (`--font-plus-jakarta-sans`).
+  - Todo counter, KPI y cifra monetaria destacada debe usar **`font-bold tracking-tight tabular-nums`** (PROHIBIDO `font-extrabold` o `font-mono` para importes monetarios).
+  - Para tarjetas de KPIs/counters, reutilizar el componente compartido `<KpiCard />` (`frontend/src/components/ui/KpiCard.tsx`).
+- **Geometría y Radios:** `rounded-xl` (`--radius: 0.75rem`) para cards y contenedores, `rounded-lg` para inputs/botones internos, `rounded-full` para pills/badges.
 - **Prohibición de Valores Arbitrarios (No Magic Numbers):**
   - **PROHIBIDO** el uso de brackets arbitrarios (`w-[500px]`, `h-[300px]`, `text-[13px]`, `p-[18px]`, `bg-[#1a2b]`).
   - Usar la escala estándar de Tailwind (`max-w-md`, `max-w-xl`, `w-full`, múltiplos de 4px: `p-2`, `p-4`, `gap-3`, etc.).

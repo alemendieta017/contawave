@@ -2,6 +2,7 @@ import {
   LucideIcon,
   ReceiptText,
   Wallet,
+  Handshake,
   PieChart,
   CalendarRange,
   Target,
@@ -115,6 +116,14 @@ export const navigationRegistry: NavEntry[] = [
     href: '/transactions',
     icon: ReceiptText,
     mobilePlacement: 'bottom_bar',
+  },
+  {
+    id: 'commitments',
+    name: 'Pagos y Cobros',
+    href: '/commitments',
+    aliasHrefs: ['/compromisos', '/compromisos/nuevo'],
+    icon: Handshake,
+    mobilePlacement: 'drawer',
   },
   {
     id: 'accounts',

@@ -178,4 +178,106 @@ describe('ForecastMatrixGrid Component', () => {
     fireEvent.click(incomeSectionHeader);
     expect(screen.getByText('Ventas de Servicios')).toBeInTheDocument();
   });
+
+  it('renders Actual badge, separates AR/AP directional inflows/outflows, and expands contactBreakdown sub-rows', () => {
+    const monthsWithActual: MonthForecastItem[] = [
+      {
+        periodId: 'p-1',
+        periodName: '2026-01',
+        status: 'CLOSED',
+        isReal: true,
+        periodStatus: 'REAL',
+        initialCash: 1000,
+        ingresosOperativos: 0,
+        entradasActivoPasivo: 500,
+        totalEntradas: 500,
+        egresosOperativos: 0,
+        salidasActivoPasivo: 200,
+        totalSalidas: 200,
+        netFlow: 300,
+        finalCash: 1300,
+      },
+      {
+        periodId: 'p-2',
+        periodName: '2026-02',
+        status: 'OPEN',
+        isReal: false,
+        isCurrent: true,
+        periodStatus: 'ACTUAL',
+        initialCash: 1300,
+        ingresosOperativos: 0,
+        entradasActivoPasivo: 700,
+        totalEntradas: 700,
+        egresosOperativos: 0,
+        salidasActivoPasivo: 0,
+        totalSalidas: 0,
+        netFlow: 700,
+        finalCash: 2000,
+      },
+    ];
+
+    const accountsWithContacts: AccountForecastItem[] = [
+      {
+        accountId: 'ar-1',
+        accountName: 'Cuentas por Cobrar',
+        accountType: 'ASSET',
+        systemRole: 'ACCOUNTS_RECEIVABLE',
+        parentId: null,
+        values: { 'p-1': 500, 'p-2': 700 },
+        inflowValues: { 'p-1': 500, 'p-2': 700 },
+        outflowValues: { 'p-1': 0, 'p-2': 0 },
+        contactBreakdown: [
+          {
+            contactId: 'c-1',
+            contactName: 'Cliente Norte',
+            amount: 1200,
+            valuesByPeriod: { 'p-1': 500, 'p-2': 700 },
+          },
+        ],
+      },
+      {
+        accountId: 'ap-1',
+        accountName: 'Cuentas por Pagar',
+        accountType: 'LIABILITY',
+        systemRole: 'ACCOUNTS_PAYABLE',
+        parentId: null,
+        values: { 'p-1': -200, 'p-2': 0 },
+        inflowValues: { 'p-1': 0, 'p-2': 0 },
+        outflowValues: { 'p-1': 200, 'p-2': 0 },
+        contactBreakdown: [
+          {
+            contactId: 'c-2',
+            contactName: 'Proveedor Sur',
+            amount: 200,
+            valuesByPeriod: { 'p-1': 200, 'p-2': 0 },
+          },
+        ],
+      },
+    ];
+
+    render(
+      <ForecastMatrixGrid
+        type="CASH_FLOW"
+        months={monthsWithActual}
+        accounts={accountsWithContacts}
+        baseCurrency={mockBaseCurrency}
+      />,
+    );
+
+    expect(screen.getByText('Real')).toBeInTheDocument();
+    expect(screen.getByText('Actual')).toBeInTheDocument();
+    expect(screen.queryByText('Híbrido')).not.toBeInTheDocument();
+
+    // Zero-flow filtering ensures each control account renders once in its own direction
+    expect(screen.getAllByText('Cuentas por Cobrar')).toHaveLength(1);
+    expect(screen.getAllByText('Cuentas por Pagar')).toHaveLength(1);
+
+    // Virtual contact sub-rows collapsed initially
+    expect(screen.queryByText(/Cliente Norte/)).not.toBeInTheDocument();
+
+    // Expand Cuentas por Cobrar
+    const expandBtns = screen.getAllByTitle('Expandir');
+    fireEvent.click(expandBtns[0]);
+    expect(screen.getByText(/└─ Cliente Norte/)).toBeInTheDocument();
+  });
 });

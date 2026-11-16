@@ -16,11 +16,16 @@ import {
   Grid,
 } from 'lucide-react';
 
+import type { VirtualContactSubRow } from '@sistema-contable/shared';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+
 type ReportItem = {
   accountId: string;
   name: string;
+  systemRole?: string | null;
   balance?: number;
   balances?: number[];
+  contactBreakdown?: VirtualContactSubRow[];
 };
 
 type BalanceSheetData = {
@@ -45,10 +50,22 @@ type Period = {
   status: string;
 };
 
+function getLocalIsoDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalYearMonth(): string {
+  return getLocalIsoDate().substring(0, 7);
+}
+
 export default function BalanceSheetPage() {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10));
+  const [selectedDate, setSelectedDate] = useState(getLocalIsoDate);
   const [selectedPeriodIds, setSelectedPeriodIds] = useState<string[]>([]);
   const depth = 4;
   const [mode, setMode] = useState<'period' | 'date' | 'comparative'>('period');
@@ -58,6 +75,10 @@ export default function BalanceSheetPage() {
   const [loading, setLoading] = useState(true);
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState('');
+  const [expandedContacts, setExpandedContacts] = useState<Record<string, boolean>>({});
+  const toggleContactBreakdown = (accountId: string) => {
+    setExpandedContacts((prev) => ({ ...prev, [accountId]: !prev[accountId] }));
+  };
 
   useEffect(() => {
     loadPeriods();
@@ -80,7 +101,7 @@ export default function BalanceSheetPage() {
       setCurrencies(currencyData || []);
 
       if (sortedPeriods.length > 0) {
-        const todayStr = new Date().toISOString().substring(0, 7);
+        const todayStr = getLocalYearMonth();
         const currentPeriod = sortedPeriods.find((p: any) => p.name === todayStr);
         const pastOrCurrentPeriods = sortedPeriods.filter((p: any) => p.name <= todayStr);
         const defaultPeriod = currentPeriod || pastOrCurrentPeriods[0] || sortedPeriods[0];
@@ -175,29 +196,88 @@ export default function BalanceSheetPage() {
     : 0;
 
   const renderRow = (item: ReportItem) => {
+    const breakdown = !isComparative && item.contactBreakdown ? item.contactBreakdown : [];
+    const hasBreakdown = breakdown.length > 0;
+    const isExpanded = Boolean(expandedContacts[item.accountId]);
+
     return (
-      <div
-        key={item.accountId}
-        className="flex justify-between items-center text-xs py-2 border-b border-dashed border-slate-100 dark:border-slate-700/50"
-      >
-        <span className="text-slate-600 dark:text-slate-300 font-semibold">{item.name}</span>
-        {isComparative && item.balances ? (
-          <div className="flex gap-4">
-            {item.balances.map((bal, idx) => (
-              <span
-                key={idx}
-                className="font-bold text-slate-800 dark:text-slate-100 min-w-28 sm:min-w-32 text-right whitespace-nowrap tabular-nums"
+      <React.Fragment key={item.accountId}>
+        <div className="flex justify-between items-center text-xs py-2 border-b border-dashed border-slate-100 dark:border-slate-700/50">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {hasBreakdown && (
+              <button
+                type="button"
+                onClick={() => toggleContactBreakdown(item.accountId)}
+                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer shrink-0"
+                title={isExpanded ? 'Colapsar desglose' : 'Ver desglose por contacto'}
+                aria-label={isExpanded ? `Colapsar ${item.name}` : `Expandir ${item.name}`}
               >
-                {formatCurrency(bal, baseCurrency)}
-              </span>
-            ))}
+                {isExpanded ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+              </button>
+            )}
+            <span
+              className={`text-slate-600 dark:text-slate-300 truncate ${
+                hasBreakdown ? 'font-medium' : 'font-semibold'
+              }`}
+            >
+              {item.name}
+            </span>
           </div>
-        ) : (
-          <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">
-            {formatCurrency(item.balance ?? 0, baseCurrency)}
-          </span>
+          {isComparative && item.balances ? (
+            <div className="flex gap-4">
+              {item.balances.map((bal, idx) => (
+                <span
+                  key={idx}
+                  className="font-bold text-slate-800 dark:text-slate-100 min-w-28 sm:min-w-32 text-right whitespace-nowrap tabular-nums"
+                >
+                  {formatCurrency(bal, baseCurrency)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span
+              className={`text-slate-800 dark:text-slate-100 tabular-nums ${
+                hasBreakdown ? 'font-medium' : 'font-bold'
+              }`}
+            >
+              {formatCurrency(item.balance ?? 0, baseCurrency)}
+            </span>
+          )}
+        </div>
+
+        {hasBreakdown && isExpanded && (
+          <div className="pl-5 border-b border-dashed border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/30">
+            {breakdown.map((sub, idx) => {
+              const prefix = idx === breakdown.length - 1 ? '└─ ' : '├─ ';
+              return (
+                <div
+                  key={`${item.accountId}-contact-${sub.contactId ?? 'none'}-${idx}`}
+                  className="flex justify-between items-center text-xs py-1.5 pr-1 text-slate-600 dark:text-slate-400"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="truncate font-normal">
+                      {prefix}
+                      {sub.contactName}
+                    </span>
+                    {sub.hasNoDate && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-2xs font-medium shrink-0">
+                        Sin fecha
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-normal text-slate-700 dark:text-slate-300 tabular-nums shrink-0">
+                    {formatCurrency(sub.amount, baseCurrency)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         )}
-      </div>
+      </React.Fragment>
     );
   };
 

@@ -1,6 +1,7 @@
 import { EntityManager } from 'typeorm';
 import { baseScenario } from './base.scenario';
 import { LedgerBuilder } from '../helpers/ledger-builder';
+import { seedDefaultCommitments } from '../helpers/commitments-seeder';
 import { PeriodEntity } from '../../entities/period.entity';
 import { AccountEntity } from '../../entities/account.entity';
 import { BudgetEntity } from '../../entities/budget.entity';
@@ -24,6 +25,13 @@ export async function defaultScenario(
   }> = [
     // Cuenta única del sistema para patrimonio y saldos iniciales
     { name: 'Capital', type: 'EQUITY', systemRole: 'CAPITAL' },
+    { name: 'Cuentas por Cobrar', type: 'ASSET', systemRole: 'ACCOUNTS_RECEIVABLE' },
+    { name: 'Cuentas por Pagar', type: 'LIABILITY', systemRole: 'ACCOUNTS_PAYABLE' },
+    {
+      name: 'Intereses y Cargos Financieros',
+      type: 'EXPENSE',
+      systemRole: 'BANK_INTEREST_EXPENSE',
+    },
 
     // Activos Líquidos y de Inversión
     { name: 'Banco Principal', type: 'ASSET', isCashOrBank: true },
@@ -284,6 +292,8 @@ export async function defaultScenario(
     { accountId: acctInversion.id, debitDiff: 2000000, creditDiff: 0 },
     { accountId: acctBanco.id, debitDiff: 0, creditDiff: 2000000 },
   ]);
+
+  await seedDefaultCommitments(em, user.id, accountMap, builder, balanceUpdateService);
 
   console.log('[SEED] Escenario "default" sembrado exitosamente.');
 

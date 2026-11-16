@@ -11,14 +11,19 @@ import {
   Building2,
   ShieldCheck,
 } from 'lucide-react';
+import type { VirtualContactSubRow } from '@sistema-contable/shared';
 import { formatCurrency } from '../../lib/utils';
 
 export interface AccountForecastItem {
   accountId: string;
   accountName: string;
   accountType: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
+  systemRole?: string | null;
   parentId: string | null;
   values: { [periodId: string]: number };
+  inflowValues?: { [periodId: string]: number };
+  outflowValues?: { [periodId: string]: number };
+  contactBreakdown?: VirtualContactSubRow[];
 }
 
 export interface MonthForecastItem {
@@ -26,6 +31,8 @@ export interface MonthForecastItem {
   periodName: string;
   status?: string;
   isReal: boolean;
+  isCurrent?: boolean;
+  periodStatus?: 'REAL' | 'ACTUAL' | 'PROYECTADO';
   // Cash flow fields
   initialCash?: number;
   ingresosOperativos?: number;
@@ -131,6 +138,22 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
     return depth;
   };
 
+  const getContactSubRows = (
+    acc: AccountForecastItem,
+    flowFilter: 'CASH_IN' | 'CASH_OUT' | 'DEFAULT',
+  ) => {
+    const raw = acc.contactBreakdown ?? [];
+    if (raw.length === 0) return [];
+    if (flowFilter === 'CASH_IN' && acc.systemRole === 'ACCOUNTS_PAYABLE') return [];
+    if (flowFilter === 'CASH_OUT' && acc.systemRole === 'ACCOUNTS_RECEIVABLE') return [];
+    return raw.filter((sub) => {
+      if (sub.valuesByPeriod) {
+        return months.some((m) => Math.abs(sub.valuesByPeriod?.[m.periodId] ?? 0) !== 0);
+      }
+      return Math.abs(sub.amount ?? 0) !== 0;
+    });
+  };
+
   // Roll-up values recursively for trees
   const getSubtreeValue = (
     accId: string,
@@ -143,12 +166,19 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
     let val = acc.values[periodId] || 0;
 
     if (flowFilter === 'CASH_IN') {
+      if (acc.systemRole === 'ACCOUNTS_PAYABLE') return 0;
       if (acc.accountType === 'ASSET' || acc.accountType === 'LIABILITY') {
-        val = val > 0 ? val : 0;
+        val = acc.inflowValues !== undefined ? acc.inflowValues[periodId] || 0 : val > 0 ? val : 0;
       }
     } else if (flowFilter === 'CASH_OUT') {
+      if (acc.systemRole === 'ACCOUNTS_RECEIVABLE') return 0;
       if (acc.accountType === 'ASSET' || acc.accountType === 'LIABILITY') {
-        val = val < 0 ? Math.abs(val) : 0;
+        val =
+          acc.outflowValues !== undefined
+            ? Math.abs(acc.outflowValues[periodId] || 0)
+            : val < 0
+              ? Math.abs(val)
+              : 0;
       }
     }
 
@@ -159,6 +189,13 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
     });
 
     return val + childrenSum;
+  };
+
+  const hasNonZeroFlow = (
+    accId: string,
+    flowFilter: 'CASH_IN' | 'CASH_OUT' | 'DEFAULT',
+  ): boolean => {
+    return months.some((m) => getSubtreeValue(accId, m.periodId, flowFilter) !== 0);
   };
 
   const getSubtreeRowTotal = (
@@ -177,11 +214,17 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
 
     const depth = getAccountDepth(acc);
     const childrenPresent = hasChildren(acc.accountId);
+    const contactSubRows = getContactSubRows(acc, flowFilter);
+    const expandable = childrenPresent || contactSubRows.length > 0;
     const isExpanded = expandedAccounts[acc.accountId];
     const rowTotal = getSubtreeRowTotal(acc.accountId, flowFilter);
 
     // Recursively render child accounts if expanded
-    const directChildren = accounts.filter((a) => a.parentId === acc.accountId);
+    const directChildren = accounts
+      .filter((a) => a.parentId === acc.accountId)
+      .filter((child) =>
+        flowFilter === 'DEFAULT' ? true : hasNonZeroFlow(child.accountId, flowFilter),
+      );
 
     return (
       <React.Fragment key={acc.accountId}>
@@ -192,7 +235,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
             style={{ paddingLeft: `${Math.max(12, depth * 20 + 12)}px` }}
           >
             <div className="flex items-center gap-1.5 min-w-0">
-              {childrenPresent ? (
+              {expandable ? (
                 <button
                   type="button"
                   onClick={() => toggleAccount(acc.accountId)}
@@ -211,9 +254,9 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                 </span>
               )}
               <span
-                className={`truncate block text-xs ${
-                  childrenPresent
-                    ? 'font-bold text-slate-900 dark:text-slate-100'
+                className={`truncate block text-xs font-medium ${
+                  expandable
+                    ? 'text-slate-900 dark:text-slate-100'
                     : 'text-slate-700 dark:text-slate-300'
                 }`}
               >
@@ -234,9 +277,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                 key={m.periodId}
                 className={`p-2 text-right border-r border-slate-200/60 dark:border-slate-800/60 text-xs tabular-nums whitespace-nowrap ${
                   val !== 0
-                    ? childrenPresent
-                      ? 'font-bold text-slate-900 dark:text-slate-100'
-                      : 'text-slate-800 dark:text-slate-200 font-medium'
+                    ? 'font-medium text-slate-800 dark:text-slate-200'
                     : 'text-slate-400 dark:text-slate-600'
                 }`}
               >
@@ -252,12 +293,55 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                 ? Math.abs(rowTotal)
                 : rowTotal;
             return (
-              <td className="p-2 text-right text-xs font-bold text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/80 tabular-nums truncate">
+              <td className="p-2 text-right text-xs font-semibold text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/80 tabular-nums truncate">
                 {absRowTotal === 0 ? '—' : formatCurrency(absRowTotal, baseCurrency)}
               </td>
             );
           })()}
         </tr>
+
+        {isExpanded &&
+          contactSubRows.map((sub, idx) => {
+            const prefix = idx === contactSubRows.length - 1 ? '└─ ' : '├─ ';
+            const subRowTotal = months.reduce(
+              (sum, m) => sum + Math.abs(sub.valuesByPeriod?.[m.periodId] ?? 0),
+              0,
+            );
+            return (
+              <tr
+                key={`${acc.accountId}-contact-${sub.contactId ?? 'none'}-${idx}`}
+                className="bg-slate-50/40 dark:bg-slate-900/40 h-8 text-xs"
+              >
+                <td
+                  className="px-3 py-1 border-r border-slate-200 dark:border-slate-800 sticky left-0 z-10 bg-slate-50 dark:bg-slate-900/95 truncate"
+                  style={{ paddingLeft: `${Math.max(24, (depth + 1) * 20 + 12)}px` }}
+                >
+                  <span className="truncate block text-xs font-normal text-slate-600 dark:text-slate-400">
+                    {prefix}
+                    {sub.contactName}
+                  </span>
+                </td>
+                {months.map((m) => {
+                  const subVal = Math.abs(sub.valuesByPeriod?.[m.periodId] ?? 0);
+                  return (
+                    <td
+                      key={m.periodId}
+                      className={`p-2 text-right border-r border-slate-200/60 dark:border-slate-800/60 text-xs tabular-nums whitespace-nowrap ${
+                        subVal !== 0
+                          ? 'font-normal text-slate-700 dark:text-slate-300'
+                          : 'text-slate-400 dark:text-slate-600'
+                      }`}
+                    >
+                      {subVal === 0 ? '—' : formatCurrency(subVal, baseCurrency)}
+                    </td>
+                  );
+                })}
+                <td className="p-2 text-right text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/80 tabular-nums truncate">
+                  {subRowTotal === 0 ? '—' : formatCurrency(subRowTotal, baseCurrency)}
+                </td>
+              </tr>
+            );
+          })}
 
         {isExpanded && directChildren.map((child) => renderAccountRow(child, flowFilter))}
       </React.Fragment>
@@ -276,6 +360,16 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
               </th>
               {months.map((m) => {
                 const { label, year } = formatMonthHeader(m.periodName);
+                const status =
+                  m.periodStatus ?? (m.isReal ? 'REAL' : m.isCurrent ? 'ACTUAL' : 'PROYECTADO');
+                const badgeClass =
+                  status === 'REAL'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                    : status === 'ACTUAL'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                      : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30';
+                const badgeLabel =
+                  status === 'REAL' ? 'Real' : status === 'ACTUAL' ? 'Actual' : 'Proyectado';
                 return (
                   <th
                     key={m.periodId}
@@ -289,13 +383,9 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                         )}
                       </div>
                       <span
-                        className={`text-2xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
-                          m.isReal
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                            : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-                        }`}
+                        className={`text-2xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${badgeClass}`}
                       >
-                        {m.isReal ? 'Real' : 'Proyectado'}
+                        {badgeLabel}
                       </span>
                     </div>
                   </th>
@@ -390,7 +480,8 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                     .filter(
                       (a) =>
                         (a.accountType === 'ASSET' || a.accountType === 'LIABILITY') &&
-                        a.parentId === null,
+                        a.parentId === null &&
+                        hasNonZeroFlow(a.accountId, 'CASH_IN'),
                     )
                     .map((acc) => renderAccountRow(acc, 'CASH_IN'))}
 
@@ -474,7 +565,8 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                     .filter(
                       (a) =>
                         (a.accountType === 'ASSET' || a.accountType === 'LIABILITY') &&
-                        a.parentId === null,
+                        a.parentId === null &&
+                        hasNonZeroFlow(a.accountId, 'CASH_OUT'),
                     )
                     .map((acc) => renderAccountRow(acc, 'CASH_OUT'))}
 

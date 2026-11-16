@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Wallet,
   Building2,
@@ -195,12 +196,23 @@ export default function AccountsList({
 
                       {a.systemRole && (
                         <span
-                          className="inline-flex items-center gap-1 text-[9px] sm:text-5xs bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded uppercase tracking-wider font-semibold shrink-0"
+                          className="inline-flex items-center gap-1 text-2xs bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold shrink-0"
                           title="Cuenta especial reservada por el sistema"
                         >
                           <Lock className="w-2.5 h-2.5" />
                           <span>
-                            Sistema ({a.systemRole === 'NET_INCOME' ? 'Resultado' : 'Retenidas'})
+                            Sistema (
+                            {(
+                              {
+                                NET_INCOME: 'Resultado',
+                                RETAINED_EARNINGS: 'Retenidas',
+                                ACCOUNTS_RECEIVABLE: 'Cobros',
+                                ACCOUNTS_PAYABLE: 'Pagos',
+                                CAPITAL: 'Capital',
+                                BANK_INTEREST_EXPENSE: 'Intereses',
+                              } as Record<string, string>
+                            )[a.systemRole] ?? a.systemRole}
+                            )
                           </span>
                         </span>
                       )}
@@ -284,6 +296,18 @@ export default function AccountsList({
                             <ReceiptText className="w-3.5 h-3.5 text-slate-400" />
                             <span>Ver movimientos</span>
                           </button>
+
+                          {(a.systemRole === 'ACCOUNTS_RECEIVABLE' ||
+                            a.systemRole === 'ACCOUNTS_PAYABLE') && (
+                            <Link
+                              href="/commitments"
+                              onClick={() => setActiveMenuId(null)}
+                              className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                            >
+                              <ReceiptText className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Ver desglose en Pagos y Cobros</span>
+                            </Link>
+                          )}
 
                           {!a.systemRole &&
                             !isInactive &&

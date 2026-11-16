@@ -19,6 +19,7 @@ import {
   ArrowDownRight,
 } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
+import { KpiCard } from '../../components/ui/KpiCard';
 import { useSearch } from '../../lib/search-context';
 import { AccountStatus } from '@sistema-contable/shared';
 
@@ -275,66 +276,62 @@ export default function AccountsPage() {
         return (
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
             {/* Patrimonio Neto */}
-            <div className="bg-brand-gradient text-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-brand-glow relative overflow-hidden flex flex-col justify-between">
-              <div className="relative z-10 flex items-center justify-between">
-                <span className="text-[10px] sm:text-3xs font-extrabold uppercase tracking-wider text-white/80 truncate">
-                  Patrimonio Neto
-                </span>
+            <KpiCard
+              variant="hero"
+              label="Patrimonio Neto"
+              labelClassName="text-xs font-bold text-white/80"
+              value={formatCurrency(summary?.netWorth || 0, baseCurrency)}
+              valueClassName="text-xs sm:text-2xl"
+              className="p-2.5 sm:p-5"
+              icon={
                 <div className="hidden sm:flex w-7 h-7 rounded-lg bg-white/20 items-center justify-center">
                   <Wallet className="w-4 h-4 text-white" />
                 </div>
-              </div>
-              <div className="relative z-10 mt-1 sm:mt-3 min-w-0">
-                <span className="text-xs sm:text-2xl font-bold tracking-tight tabular-nums block truncate">
-                  {formatCurrency(summary?.netWorth || 0, baseCurrency)}
-                </span>
-                <p className="hidden sm:block text-4xs text-white/80 mt-0.5">
-                  Activos menos Pasivos
-                </p>
-              </div>
-              {/* Decorative brand glow / wave accent */}
-              <div className="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
-            </div>
+              }
+              footer={
+                <p className="hidden sm:block text-xs text-white/80">Activos menos Pasivos</p>
+              }
+            />
 
             {/* Total Activos */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-2.5 sm:p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] sm:text-3xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
-                  Total Activos
-                </span>
+            <KpiCard
+              variant="default"
+              label="Total Activos"
+              labelClassName="text-xs font-bold"
+              value={formatCurrency(summary?.totalAssets || 0, baseCurrency)}
+              valueClassName="text-xs sm:text-2xl"
+              className="p-2.5 sm:p-5"
+              icon={
                 <div className="hidden sm:flex w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 items-center justify-center">
                   <ArrowUpRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-              </div>
-              <div className="mt-1 sm:mt-3 min-w-0">
-                <span className="text-xs sm:text-2xl font-bold tracking-tight tabular-nums text-slate-800 dark:text-slate-100 block truncate">
-                  {formatCurrency(summary?.totalAssets || 0, baseCurrency)}
-                </span>
-                <p className="hidden sm:block text-4xs text-emerald-600 dark:text-emerald-400 mt-0.5 font-semibold">
+              }
+              footer={
+                <p className="hidden sm:block text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
                   Bienes, bancos y efectivo
                 </p>
-              </div>
-            </div>
+              }
+            />
 
             {/* Total Pasivos */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-2.5 sm:p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] sm:text-3xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
-                  Total Pasivos
-                </span>
+            <KpiCard
+              variant="default"
+              label="Total Pasivos"
+              labelClassName="text-xs font-bold"
+              value={formatCurrency(summary?.totalLiabilities || 0, baseCurrency)}
+              valueClassName="text-xs sm:text-2xl"
+              className="p-2.5 sm:p-5"
+              icon={
                 <div className="hidden sm:flex w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/50 items-center justify-center">
                   <ArrowDownRight className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                 </div>
-              </div>
-              <div className="mt-1 sm:mt-3 min-w-0">
-                <span className="text-xs sm:text-2xl font-bold tracking-tight tabular-nums text-slate-800 dark:text-slate-100 block truncate">
-                  {formatCurrency(summary?.totalLiabilities || 0, baseCurrency)}
-                </span>
-                <p className="hidden sm:block text-4xs text-rose-500 dark:text-rose-400 mt-0.5 font-semibold">
+              }
+              footer={
+                <p className="hidden sm:block text-xs text-rose-500 dark:text-rose-400 font-semibold">
                   Deudas y obligaciones
                 </p>
-              </div>
-            </div>
+              }
+            />
           </div>
         );
       })()}

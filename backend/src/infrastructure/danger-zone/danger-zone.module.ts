@@ -11,6 +11,10 @@ import { BudgetItemEntity } from '../database/entities/budget-item.entity';
 import { BudgetReassignmentEntity } from '../database/entities/budget-reassignment.entity';
 import { PasswordResetTokenEntity } from '../database/entities/password-reset-token.entity';
 import { CurrencyEntity } from '../database/entities/currency.entity';
+import { ContactEntity } from '../database/entities/contact.entity';
+import { CommitmentEntity } from '../database/entities/commitment.entity';
+import { CommitmentInstallmentEntity } from '../database/entities/commitment-installment.entity';
+import { CommitmentSettlementEntity } from '../database/entities/commitment-settlement.entity';
 import { AuthModule } from '../auth/auth.module';
 import { DangerZoneController } from '../controllers/danger-zone.controller';
 import { FactoryResetUseCase } from '../../application/danger-zone/factory-reset.use-case';
@@ -30,6 +34,10 @@ import { DeleteUserAccountUseCase } from '../../application/danger-zone/delete-a
       BudgetReassignmentEntity,
       PasswordResetTokenEntity,
       CurrencyEntity,
+      ContactEntity,
+      CommitmentEntity,
+      CommitmentInstallmentEntity,
+      CommitmentSettlementEntity,
     ]),
     AuthModule,
   ],
