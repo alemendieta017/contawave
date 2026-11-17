@@ -130,7 +130,7 @@ export default function AccountsList({
       <section className="space-y-1.5 sm:space-y-2">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <h3 className="text-[10px] sm:text-3xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            <h3 className="text-3xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               {title}
             </h3>
             <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 tabular-nums leading-none">
@@ -138,7 +138,7 @@ export default function AccountsList({
             </span>
           </div>
           {showBalances && (
-            <span className="text-[11px] sm:text-3xs font-semibold tabular-nums text-slate-400 dark:text-slate-500">
+            <span className="text-2xs sm:text-3xs font-semibold tabular-nums text-slate-400 dark:text-slate-500">
               Subtotal: {formatCurrency(totalGroupBalance, groupCurrency)}
             </span>
           )}
@@ -183,7 +183,7 @@ export default function AccountsList({
                       </span>
 
                       {isInactive && (
-                        <span className="text-[9px] sm:text-5xs bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded uppercase tracking-wider font-bold shrink-0">
+                        <span className="text-4xs sm:text-5xs bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-1 sm:px-1.5 py-0.5 rounded uppercase tracking-wider font-bold shrink-0">
                           Inactiva
                         </span>
                       )}
@@ -266,7 +266,7 @@ export default function AccountsList({
                         e.stopPropagation();
                         setActiveMenuId(isMenuOpen ? null : a.id);
                       }}
-                      className="p-1 sm:p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                      className="p-1 sm:p-1.5 min-w-7 min-h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>

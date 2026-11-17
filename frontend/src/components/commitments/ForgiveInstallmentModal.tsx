@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CommitmentDto, CommitmentInstallmentDto } from '@sistema-contable/shared';
 import { X, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
@@ -27,23 +27,47 @@ export default function ForgiveInstallmentModal({
   baseCurrency,
   onSuccess,
 }: ForgiveInstallmentModalProps) {
-  const adjustmentOptions = accounts.filter((a) => {
-    if (a.status !== 'ACTIVE') return false;
-    return commitment.direction === 'INFLOW'
-      ? a.type === 'EXPENSE'
-      : a.type === 'INCOME' || a.type === 'EQUITY';
-  });
+  const adjustmentOptions = useMemo(
+    () =>
+      accounts.filter((a) => {
+        if (a.status !== 'ACTIVE') return false;
+        return commitment.direction === 'INFLOW'
+          ? a.type === 'EXPENSE'
+          : a.type === 'INCOME' || a.type === 'EQUITY';
+      }),
+    [accounts, commitment.direction],
+  );
 
   const defaultAdj =
     adjustmentOptions.find((a) => a.systemRole === 'BANK_INTEREST_EXPENSE') ||
     adjustmentOptions.find((a) => a.systemRole === 'CAPITAL') ||
     adjustmentOptions[0];
+  const defaultAdjId = defaultAdj?.id || '';
 
-  const [adjustmentAccountId, setAdjustmentAccountId] = useState(defaultAdj?.id || '');
+  const [adjustmentAccountId, setAdjustmentAccountId] = useState(defaultAdjId);
   const [forgivenAt, setForgivenAt] = useState(getTodayLocalIso());
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setAdjustmentAccountId(defaultAdjId);
+    setForgivenAt(getTodayLocalIso());
+    setNotes('');
+    setError('');
+  }, [isOpen, installment.id, defaultAdjId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !submitting) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, submitting, onClose]);
 
   if (!isOpen) return null;
 

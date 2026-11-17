@@ -826,7 +826,7 @@ export const api = {
       return handleResponse(res);
     },
 
-    async delete(id: string): Promise<{ deleted: boolean }> {
+    async delete(id: string): Promise<{ success: boolean }> {
       const res = await fetch(`${API_BASE_URL}/commitments/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),

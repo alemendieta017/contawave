@@ -287,21 +287,21 @@ export default function BalanceSheetPage() {
     totalColorClass: string = 'text-indigo-600 dark:text-indigo-400',
   ) => {
     return (
-      <div className="flex justify-between items-center pt-3 mt-4 border-t border-slate-200 dark:border-slate-700 font-extrabold text-xs">
+      <div className="flex justify-between items-center pt-3 mt-4 border-t border-slate-200 dark:border-slate-700 font-bold text-xs">
         <span className="text-slate-700 dark:text-slate-300">{label}</span>
         {isComparative && Array.isArray(totals) ? (
           <div className="flex gap-4">
             {totals.map((tot, idx) => (
               <span
                 key={idx}
-                className={`${totalColorClass} min-w-28 sm:min-w-32 text-right text-sm whitespace-nowrap tabular-nums`}
+                className={`${totalColorClass} min-w-28 sm:min-w-32 text-right text-sm font-bold tracking-tight whitespace-nowrap tabular-nums`}
               >
                 {formatCurrency(tot, baseCurrency)}
               </span>
             ))}
           </div>
         ) : (
-          <span className={`${totalColorClass} text-sm tabular-nums`}>
+          <span className={`${totalColorClass} text-sm font-bold tracking-tight tabular-nums`}>
             {formatCurrency(totals as number, baseCurrency)}
           </span>
         )}
@@ -629,7 +629,7 @@ export default function BalanceSheetPage() {
 
               {/* Total Liabilities + Equity Card */}
               <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 print:border-none print:shadow-none print:p-0">
-                <div className="flex justify-between items-center font-extrabold text-xs">
+                <div className="flex justify-between items-center font-bold text-xs">
                   <span className="text-slate-800 dark:text-slate-200">
                     TOTAL PASIVO + PATRIMONIO NETO
                   </span>
@@ -638,14 +638,14 @@ export default function BalanceSheetPage() {
                       {totalLiabEquity.map((tot, idx) => (
                         <span
                           key={idx}
-                          className="text-indigo-600 dark:text-indigo-400 min-w-28 sm:min-w-32 text-right text-sm font-extrabold whitespace-nowrap tabular-nums"
+                          className="text-indigo-600 dark:text-indigo-400 min-w-28 sm:min-w-32 text-right text-sm font-bold tracking-tight whitespace-nowrap tabular-nums"
                         >
                           {formatCurrency(tot, baseCurrency)}
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <span className="text-indigo-600 dark:text-indigo-400 text-sm font-extrabold tabular-nums">
+                    <span className="text-indigo-600 dark:text-indigo-400 text-sm font-bold tracking-tight tabular-nums">
                       {formatCurrency(totalLiabEquity as number, baseCurrency)}
                     </span>
                   )}
@@ -655,7 +655,7 @@ export default function BalanceSheetPage() {
           </div>
 
           {/* Aggregated Closing Summary Footer */}
-          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex flex-col gap-4 text-xs font-extrabold">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex flex-col gap-4 text-xs font-bold">
             <div>
               <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider">
                 Ecuación Contable Consolidada

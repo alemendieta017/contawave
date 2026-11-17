@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CommitmentDto, CommitmentInstallmentDto } from '@sistema-contable/shared';
 import { X, Banknote, ArrowRight, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
@@ -33,21 +33,44 @@ export default function SettleInstallmentModal({
   onSuccess,
 }: SettleInstallmentModalProps) {
   const decimals = baseCurrency?.decimalPlaces ?? 0;
-  const activeCash = cashAccounts.filter(
-    (a) => a.type === 'ASSET' && a.isCashOrBank && a.status === 'ACTIVE',
+  const activeCash = useMemo(
+    () => cashAccounts.filter((a) => a.type === 'ASSET' && a.isCashOrBank && a.status === 'ACTIVE'),
+    [cashAccounts],
   );
 
-  const [amountInput, setAmountInput] = useState(String(installment.pendingAmount));
-  const [cashAccountId, setCashAccountId] = useState(
+  const defaultCashId =
     commitment.cashAccountId && activeCash.some((a) => a.id === commitment.cashAccountId)
       ? commitment.cashAccountId
-      : activeCash[0]?.id || '',
-  );
+      : activeCash[0]?.id || '';
+
+  const [amountInput, setAmountInput] = useState(String(installment.pendingAmount));
+  const [cashAccountId, setCashAccountId] = useState(defaultCashId);
   const [settledAt, setSettledAt] = useState(getTodayLocalIso());
   const [leaveNoDateRemainder, setLeaveNoDateRemainder] = useState(installment.dueDate === null);
   const [remainderDueDate, setRemainderDueDate] = useState(installment.dueDate || '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setAmountInput(String(installment.pendingAmount));
+    setCashAccountId(defaultCashId);
+    setSettledAt(getTodayLocalIso());
+    setLeaveNoDateRemainder(installment.dueDate === null);
+    setRemainderDueDate(installment.dueDate || '');
+    setError('');
+  }, [isOpen, installment.id, installment.pendingAmount, installment.dueDate, defaultCashId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !submitting) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, submitting, onClose]);
 
   if (!isOpen) return null;
 
@@ -153,7 +176,7 @@ export default function SettleInstallmentModal({
             <button
               type="button"
               onClick={() => setAmountInput(String(installment.pendingAmount))}
-              className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 tabular-nums hover:underline cursor-pointer"
+              className="text-sm font-bold tracking-tight text-indigo-600 dark:text-indigo-400 tabular-nums hover:underline cursor-pointer"
             >
               {formatCurrency(installment.pendingAmount, baseCurrency)}
             </button>
@@ -219,7 +242,7 @@ export default function SettleInstallmentModal({
                 <span className="font-bold text-amber-800 dark:text-amber-200">
                   Entrega parcial — Saldo restante:
                 </span>
-                <span className="font-extrabold text-amber-900 dark:text-amber-100 tabular-nums">
+                <span className="font-bold tracking-tight text-amber-900 dark:text-amber-100 tabular-nums">
                   {formatCurrency(remainder, baseCurrency)}
                 </span>
               </div>

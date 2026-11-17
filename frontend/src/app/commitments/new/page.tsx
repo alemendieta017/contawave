@@ -445,7 +445,7 @@ export default function NewCommitmentPage() {
                       setTotalAmountInput(normalizeAmountInput(e.target.value, decimals))
                     }
                     placeholder="0"
-                    className="w-full px-3.5 py-2.5 min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-right text-lg font-extrabold text-slate-900 dark:text-slate-100 tabular-nums"
+                    className="w-full px-3.5 py-2.5 min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-right text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 tabular-nums"
                   />
                 </div>
 
@@ -595,7 +595,7 @@ export default function NewCommitmentPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-slate-600 dark:text-slate-400">Suma de cuotas:</span>
                         <span
-                          className={`font-extrabold tabular-nums ${
+                          className={`font-bold tracking-tight tabular-nums ${
                             installmentsMatch ? 'text-emerald-600' : 'text-rose-600'
                           }`}
                         >
@@ -887,7 +887,7 @@ export default function NewCommitmentPage() {
                     <strong className="text-slate-900 dark:text-slate-100">DEBE:</strong>{' '}
                     {previewDebit}
                   </span>
-                  <span className="font-extrabold tabular-nums text-slate-900 dark:text-slate-100 shrink-0">
+                  <span className="font-bold tracking-tight tabular-nums text-slate-900 dark:text-slate-100 shrink-0">
                     {formatCurrency(totalAmount, baseCurrency)}
                   </span>
                 </div>
@@ -896,7 +896,7 @@ export default function NewCommitmentPage() {
                     <strong className="text-slate-900 dark:text-slate-100">HABER:</strong>{' '}
                     {previewCredit}
                   </span>
-                  <span className="font-extrabold tabular-nums text-slate-900 dark:text-slate-100 shrink-0">
+                  <span className="font-bold tracking-tight tabular-nums text-slate-900 dark:text-slate-100 shrink-0">
                     {formatCurrency(totalAmount, baseCurrency)}
                   </span>
                 </div>

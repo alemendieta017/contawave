@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  ParseUUIDPipe,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -74,7 +75,7 @@ export class CommitmentController {
   @Post('installments/:id/settle')
   async settleInstallment(
     @CurrentUser() user: UserEntity,
-    @Param('id') installmentId: string,
+    @Param('id', new ParseUUIDPipe()) installmentId: string,
     @Body(new ZodValidationPipe(SettleCommitmentInstallmentRequestSchema))
     body: SettleCommitmentInstallmentRequest,
   ) {
@@ -84,7 +85,7 @@ export class CommitmentController {
   @Post('installments/:id/forgive')
   async forgiveInstallment(
     @CurrentUser() user: UserEntity,
-    @Param('id') installmentId: string,
+    @Param('id', new ParseUUIDPipe()) installmentId: string,
     @Body(new ZodValidationPipe(ForgiveCommitmentInstallmentRequestSchema))
     body: ForgiveCommitmentInstallmentRequest,
   ) {
@@ -94,7 +95,7 @@ export class CommitmentController {
   @Patch('installments/:id')
   async rescheduleInstallment(
     @CurrentUser() user: UserEntity,
-    @Param('id') installmentId: string,
+    @Param('id', new ParseUUIDPipe()) installmentId: string,
     @Body(new ZodValidationPipe(RescheduleCommitmentInstallmentRequestSchema))
     body: RescheduleCommitmentInstallmentRequest,
   ) {
@@ -102,14 +103,17 @@ export class CommitmentController {
   }
 
   @Post('settlements/:id/undo')
-  async undoSettlement(@CurrentUser() user: UserEntity, @Param('id') settlementId: string) {
+  async undoSettlement(
+    @CurrentUser() user: UserEntity,
+    @Param('id', new ParseUUIDPipe()) settlementId: string,
+  ) {
     return this.undoSettlementUseCase.execute(user.id, settlementId);
   }
 
   @Get(':id')
   async getById(
     @CurrentUser() user: UserEntity,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Query('timezoneOffset') timezoneOffset?: string,
   ) {
     return this.getCommitmentsUseCase.getById(
@@ -122,21 +126,21 @@ export class CommitmentController {
   @Patch(':id')
   async update(
     @CurrentUser() user: UserEntity,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new ZodValidationPipe(UpdateCommitmentRequestSchema)) body: UpdateCommitmentRequest,
   ) {
     return this.updateCommitmentUseCase.execute(user.id, id, body);
   }
 
   @Delete(':id')
-  async delete(@CurrentUser() user: UserEntity, @Param('id') id: string) {
+  async delete(@CurrentUser() user: UserEntity, @Param('id', new ParseUUIDPipe()) id: string) {
     return this.deleteCommitmentUseCase.execute(user.id, id);
   }
 
   @Post(':id/installments')
   async addInstallment(
     @CurrentUser() user: UserEntity,
-    @Param('id') commitmentId: string,
+    @Param('id', new ParseUUIDPipe()) commitmentId: string,
     @Body(new ZodValidationPipe(AddCommitmentInstallmentRequestSchema))
     body: AddCommitmentInstallmentRequest,
   ) {
@@ -146,8 +150,8 @@ export class CommitmentController {
   @Delete(':id/installments/:installmentId')
   async deleteInstallment(
     @CurrentUser() user: UserEntity,
-    @Param('id') commitmentId: string,
-    @Param('installmentId') installmentId: string,
+    @Param('id', new ParseUUIDPipe()) commitmentId: string,
+    @Param('installmentId', new ParseUUIDPipe()) installmentId: string,
   ) {
     return this.manageInstallmentsUseCase.deleteInstallment(user.id, commitmentId, installmentId);
   }

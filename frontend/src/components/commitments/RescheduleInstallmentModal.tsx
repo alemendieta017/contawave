@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CommitmentDto, CommitmentInstallmentDto } from '@sistema-contable/shared';
 import { X, Calendar, CalendarOff, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
@@ -28,6 +28,24 @@ export default function RescheduleInstallmentModal({
   const [dueDate, setDueDate] = useState(installment.dueDate || getTodayLocalIso());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setNoDate(installment.dueDate === null);
+    setDueDate(installment.dueDate || getTodayLocalIso());
+    setError('');
+  }, [isOpen, installment.id, installment.dueDate]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !submitting) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, submitting, onClose]);
 
   if (!isOpen) return null;
 

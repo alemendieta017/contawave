@@ -39,6 +39,7 @@ import { RescheduleCommitmentInstallmentUseCase } from './reschedule-commitment-
 import { SettleCommitmentInstallmentUseCase } from './settle-commitment-installment.use-case';
 import { SystemAccountService } from './system-account.service';
 import { UndoCommitmentSettlementUseCase } from './undo-commitment-settlement.use-case';
+import { UpdateCommitmentUseCase } from './update-commitment.use-case';
 
 describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
   const userId = 'user-1';
@@ -679,6 +680,214 @@ describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
         { deletePostedTransactionWithBalances: jest.fn() } as unknown as SystemAccountService,
       );
       await expect(deleteUseCase.execute(userId, 'com-4')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects forgiving against cash/bank or control accounts and rejects same-account double entry', async () => {
+      const installment: any = {
+        id: 'inst-fg',
+        installmentNumber: 1,
+        amount: 500,
+        dueDate: '2026-08-10',
+        settlements: [],
+        commitment: {
+          id: 'com-fg',
+          userId,
+          direction: 'INFLOW',
+          originType: 'CASH_TRANSFER',
+          description: 'Préstamo sin cobro',
+          controlAccountId: arAccountId,
+          contact: { name: 'Familiar' },
+        },
+      };
+
+      const emMock: any = {
+        findOne: jest.fn(async (entity: any, opts: any) => {
+          if (entity === CommitmentInstallmentEntity) return installment;
+          if (entity === AccountEntity) {
+            if (opts?.where?.id === cashAccountId) {
+              return {
+                id: cashAccountId,
+                userId,
+                name: 'Caja',
+                type: 'ASSET',
+                isCashOrBank: true,
+                isControlAccount: false,
+              };
+            }
+            if (opts?.where?.id === arAccountId) {
+              return {
+                id: arAccountId,
+                userId,
+                name: 'Cuentas por Cobrar',
+                type: 'ASSET',
+                isCashOrBank: false,
+                isControlAccount: true,
+                systemRole: 'ACCOUNTS_RECEIVABLE',
+              };
+            }
+          }
+          return null;
+        }),
+      };
+
+      const forgiveUseCase = new ForgiveCommitmentInstallmentUseCase(
+        { transaction: (_iso: any, cb: any) => cb(emMock) } as unknown as DataSource,
+        { postDoubleEntry: jest.fn() } as unknown as SystemAccountService,
+        { getById: jest.fn() } as unknown as GetCommitmentsUseCase,
+      );
+
+      await expect(
+        forgiveUseCase.execute(userId, 'inst-fg', { expenseAccountId: cashAccountId }),
+      ).rejects.toThrow(BadRequestException);
+
+      await expect(
+        forgiveUseCase.execute(userId, 'inst-fg', { expenseAccountId: arAccountId }),
+      ).rejects.toThrow(BadRequestException);
+
+      const sysAccountService = new SystemAccountService(
+        { ensurePeriod: jest.fn() } as unknown as EnsurePeriodService,
+        { updateBalances: jest.fn() } as unknown as BalanceUpdateService,
+      );
+
+      await expect(
+        sysAccountService.postDoubleEntry(emMock, userId, {
+          accountingDate: '2026-08-15',
+          description: 'Asiento inválido',
+          debitAccountId: arAccountId,
+          creditAccountId: arAccountId,
+          amountBase: 100,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('UpdateCommitmentUseCase blocks origin change when settled > 0, allows metadata edit, and rebuilds tx when unsettled', async () => {
+      const rebuildSpy = jest.fn().mockResolvedValue(undefined);
+      const savedCommitments: any[] = [];
+
+      const buildEm = (settledAmount: number) => ({
+        findOne: jest.fn(async (entity: any, opts: any) => {
+          if (entity === CommitmentEntity) {
+            return {
+              id: 'com-upd',
+              userId,
+              contactId,
+              contact: { id: contactId, name: 'Cliente A' },
+              direction: 'INFLOW',
+              originType: 'CATEGORY',
+              categoryAccountId: incomeCatId,
+              cashAccountId: null,
+              controlAccountId: arAccountId,
+              description: 'Servicio original',
+              notes: null,
+              totalAmount: 1000,
+              initialTransactionId: 'tx-init-upd',
+              initialTransaction: {
+                id: 'tx-init-upd',
+                status: 'POSTED',
+                description: 'Desc inicial',
+              },
+              installments: [
+                {
+                  id: 'inst-upd-1',
+                  amount: 1000,
+                  dueDate: '2026-09-01',
+                  settlements:
+                    settledAmount > 0
+                      ? [
+                          {
+                            id: 'set-upd',
+                            amount: settledAmount,
+                            transaction: { status: 'POSTED' },
+                          },
+                        ]
+                      : [],
+                },
+              ],
+            };
+          }
+          if (
+            entity === ContactEntity &&
+            opts?.where?.id === '99999999-9999-4999-8999-999999999999'
+          ) {
+            return {
+              id: '99999999-9999-4999-8999-999999999999',
+              userId,
+              name: 'Cliente Nuevo',
+            };
+          }
+          if (entity === AccountEntity && opts?.where?.id === cashAccountId) {
+            return {
+              id: cashAccountId,
+              userId,
+              name: 'Banco Principal',
+              type: 'ASSET',
+              isCashOrBank: true,
+            };
+          }
+          return null;
+        }),
+        save: jest.fn(async (entityOrData: any, data?: any) => {
+          const record = data ?? entityOrData;
+          if (entityOrData === CommitmentEntity) {
+            savedCommitments.push(record);
+          }
+          return record;
+        }),
+      });
+
+      const settledEm = buildEm(400);
+      const settledUpdateUseCase = new UpdateCommitmentUseCase(
+        { transaction: (_iso: any, cb: any) => cb(settledEm) } as unknown as DataSource,
+        { rebuildTransactionEntries: rebuildSpy } as unknown as SystemAccountService,
+        {
+          getById: jest.fn().mockResolvedValue({ id: 'com-upd' }),
+        } as unknown as GetCommitmentsUseCase,
+      );
+
+      // Cannot change originType when settled > 0
+      await expect(
+        settledUpdateUseCase.execute(userId, 'com-upd', {
+          originType: 'CASH_TRANSFER',
+          cashAccountId,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(rebuildSpy).not.toHaveBeenCalled();
+
+      // Can still edit metadata (contactId/description/notes) when settled > 0
+      await settledUpdateUseCase.execute(userId, 'com-upd', {
+        contactId: '99999999-9999-4999-8999-999999999999',
+        description: 'Servicio renombrado',
+        notes: 'Nota actualizada',
+      });
+      const savedSettled = savedCommitments.find((c) => c.description === 'Servicio renombrado');
+      expect(savedSettled?.contactId).toBe('99999999-9999-4999-8999-999999999999');
+      expect(savedSettled?.contact?.name).toBe('Cliente Nuevo');
+      expect(settledEm.save).toHaveBeenCalled();
+
+      // Can change originType when settled === 0 and rebuilds initial transaction
+      const unsettledEm = buildEm(0);
+      const unsettledUpdateUseCase = new UpdateCommitmentUseCase(
+        { transaction: (_iso: any, cb: any) => cb(unsettledEm) } as unknown as DataSource,
+        { rebuildTransactionEntries: rebuildSpy } as unknown as SystemAccountService,
+        {
+          getById: jest.fn().mockResolvedValue({ id: 'com-upd' }),
+        } as unknown as GetCommitmentsUseCase,
+      );
+
+      await unsettledUpdateUseCase.execute(userId, 'com-upd', {
+        originType: 'CASH_TRANSFER',
+        cashAccountId,
+      });
+      expect(rebuildSpy).toHaveBeenCalledWith(
+        unsettledEm,
+        userId,
+        'tx-init-upd',
+        [
+          { accountId: arAccountId, entryType: 'DEBIT', amountBase: 1000 },
+          { accountId: cashAccountId, entryType: 'CREDIT', amountBase: 1000 },
+        ],
+        '[Cuentas por cobrar] Cliente A — Servicio original',
+      );
     });
   });
 

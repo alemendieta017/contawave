@@ -501,7 +501,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                       {formatCurrency(m.totalEntradas || 0, baseCurrency)}
                     </td>
                   ))}
-                  <td className="p-2 text-right text-emerald-800 dark:text-emerald-200 bg-emerald-100/40 dark:bg-slate-900 tabular-nums font-extrabold truncate">
+                  <td className="p-2 text-right text-emerald-800 dark:text-emerald-200 bg-emerald-100/40 dark:bg-slate-900 tabular-nums font-bold tracking-tight truncate">
                     {formatCurrency(
                       months.reduce((acc, m) => acc + (m.totalEntradas || 0), 0),
                       baseCurrency,
@@ -586,7 +586,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                       {formatCurrency(Math.abs(m.totalSalidas || 0), baseCurrency)}
                     </td>
                   ))}
-                  <td className="p-2 text-right text-rose-800 dark:text-rose-200 bg-rose-100/40 dark:bg-slate-900 tabular-nums font-extrabold truncate">
+                  <td className="p-2 text-right text-rose-800 dark:text-rose-200 bg-rose-100/40 dark:bg-slate-900 tabular-nums font-bold tracking-tight truncate">
                     {formatCurrency(
                       Math.abs(months.reduce((acc, m) => acc + (m.totalSalidas || 0), 0)),
                       baseCurrency,
@@ -607,7 +607,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                     return (
                       <td
                         key={m.periodId}
-                        className={`p-2 text-right border-r border-slate-200 dark:border-slate-800 font-bold tabular-nums whitespace-nowrap ${
+                        className={`p-2 text-right border-r border-slate-200 dark:border-slate-800 font-bold tracking-tight tabular-nums whitespace-nowrap ${
                           net >= 0
                             ? 'text-emerald-700 dark:text-emerald-400'
                             : 'text-rose-600 dark:text-rose-400'
@@ -618,7 +618,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                       </td>
                     );
                   })}
-                  <td className="p-2 text-right font-extrabold text-slate-900 dark:text-slate-100 bg-slate-200/40 dark:bg-slate-950 tabular-nums truncate">
+                  <td className="p-2 text-right font-bold tracking-tight text-slate-900 dark:text-slate-100 bg-slate-200/40 dark:bg-slate-950 tabular-nums truncate">
                     {formatCurrency(
                       months.reduce((acc, m) => acc + (m.netFlow || 0), 0),
                       baseCurrency,
@@ -627,7 +627,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                 </tr>
 
                 {/* 9. SALDO FINAL DE CAJA */}
-                <tr className="bg-indigo-50/70 dark:bg-indigo-950/40 font-extrabold border-t-2 border-indigo-200 dark:border-indigo-800 h-10">
+                <tr className="bg-indigo-50/70 dark:bg-indigo-950/40 font-bold border-t-2 border-indigo-200 dark:border-indigo-800 h-10">
                   <td className="px-3 py-2 border-r border-indigo-200 dark:border-indigo-800 font-sans text-indigo-900 dark:text-indigo-200 sticky left-0 bg-indigo-50 dark:bg-slate-950 truncate">
                     <div className="flex items-center space-x-1.5">
                       <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -639,7 +639,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                     return (
                       <td
                         key={m.periodId}
-                        className={`p-2 text-right border-r border-indigo-200 dark:border-indigo-800 font-bold text-xs tabular-nums whitespace-nowrap ${
+                        className={`p-2 text-right border-r border-indigo-200 dark:border-indigo-800 font-bold tracking-tight text-xs tabular-nums whitespace-nowrap ${
                           final >= 0
                             ? 'text-indigo-950 dark:text-indigo-100'
                             : 'text-rose-600 dark:text-rose-400'
@@ -649,7 +649,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                       </td>
                     );
                   })}
-                  <td className="p-2 text-right font-black text-indigo-950 dark:text-indigo-100 bg-indigo-100/60 dark:bg-indigo-900/60 tabular-nums truncate">
+                  <td className="p-2 text-right font-bold tracking-tight text-indigo-950 dark:text-indigo-100 bg-indigo-100/60 dark:bg-indigo-900/60 tabular-nums truncate">
                     {months.length > 0
                       ? formatCurrency(months[months.length - 1].finalCash || 0, baseCurrency)
                       : '—'}
@@ -705,7 +705,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                       {formatCurrency(m.income || 0, baseCurrency)}
                     </td>
                   ))}
-                  <td className="p-2 text-right text-emerald-800 dark:text-emerald-200 bg-emerald-100/40 dark:bg-slate-900 tabular-nums font-extrabold truncate">
+                  <td className="p-2 text-right text-emerald-800 dark:text-emerald-200 bg-emerald-100/40 dark:bg-slate-900 tabular-nums font-bold tracking-tight truncate">
                     {formatCurrency(
                       months.reduce((acc, m) => acc + (m.income || 0), 0),
                       baseCurrency,
@@ -757,7 +757,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                       {formatCurrency(Math.abs(m.expense || 0), baseCurrency)}
                     </td>
                   ))}
-                  <td className="p-2 text-right text-rose-800 dark:text-rose-200 bg-rose-100/40 dark:bg-slate-900 tabular-nums font-extrabold truncate">
+                  <td className="p-2 text-right text-rose-800 dark:text-rose-200 bg-rose-100/40 dark:bg-slate-900 tabular-nums font-bold tracking-tight truncate">
                     {formatCurrency(
                       Math.abs(months.reduce((acc, m) => acc + (m.expense || 0), 0)),
                       baseCurrency,
@@ -766,7 +766,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                 </tr>
 
                 {/* 3. RESULTADO NETO (P&L) */}
-                <tr className="bg-indigo-50/70 dark:bg-indigo-950/40 font-extrabold border-t-2 border-indigo-200 dark:border-indigo-800 h-10">
+                <tr className="bg-indigo-50/70 dark:bg-indigo-950/40 font-bold border-t-2 border-indigo-200 dark:border-indigo-800 h-10">
                   <td className="px-3 py-2 border-r border-indigo-200 dark:border-indigo-800 font-sans text-indigo-900 dark:text-indigo-200 sticky left-0 bg-indigo-50 dark:bg-slate-950 truncate">
                     <div className="flex items-center space-x-1.5">
                       <Wallet className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -778,7 +778,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                     return (
                       <td
                         key={m.periodId}
-                        className={`p-2 text-right border-r border-indigo-200 dark:border-indigo-800 font-bold text-xs tabular-nums whitespace-nowrap ${
+                        className={`p-2 text-right border-r border-indigo-200 dark:border-indigo-800 font-bold tracking-tight text-xs tabular-nums whitespace-nowrap ${
                           net >= 0
                             ? 'text-emerald-700 dark:text-emerald-400'
                             : 'text-rose-600 dark:text-rose-400'
@@ -788,7 +788,7 @@ export const ForecastMatrixGrid: React.FC<ForecastMatrixGridProps> = ({
                       </td>
                     );
                   })}
-                  <td className="p-2 text-right font-black text-indigo-950 dark:text-indigo-100 bg-indigo-100/60 dark:bg-indigo-900/60 tabular-nums truncate">
+                  <td className="p-2 text-right font-bold tracking-tight text-indigo-950 dark:text-indigo-100 bg-indigo-100/60 dark:bg-indigo-900/60 tabular-nums truncate">
                     {formatCurrency(
                       months.reduce((acc, m) => acc + (m.netProfit || 0), 0),
                       baseCurrency,

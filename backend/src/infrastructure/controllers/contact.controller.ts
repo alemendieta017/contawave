@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  ParseUUIDPipe,
+  UseGuards,
+} from '@nestjs/common';
 import {
   CreateContactRequest,
   CreateContactRequestSchema,
@@ -32,14 +42,14 @@ export class ContactController {
   @Patch(':id')
   async update(
     @CurrentUser() user: UserEntity,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new ZodValidationPipe(UpdateContactRequestSchema)) body: UpdateContactRequest,
   ) {
     return this.contactsUseCase.update(user.id, id, body);
   }
 
   @Delete(':id')
-  async delete(@CurrentUser() user: UserEntity, @Param('id') id: string) {
+  async delete(@CurrentUser() user: UserEntity, @Param('id', new ParseUUIDPipe()) id: string) {
     return this.contactsUseCase.delete(user.id, id);
   }
 }

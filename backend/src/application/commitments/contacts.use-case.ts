@@ -29,15 +29,14 @@ export class ContactsUseCase {
     private readonly commitmentRepository: Repository<CommitmentEntity>,
   ) {}
 
-  async list(userId: string): Promise<ContactDto[]> {
-    const contacts = await this.contactRepository.find({
-      where: { userId },
-      order: { name: 'ASC' },
-    });
-
+  private async loadStatsByContact(
+    userId: string,
+    contactId?: string,
+  ): Promise<Map<string, { receivable: number; payable: number; count: number }>> {
     const commitments = await this.commitmentRepository.find({
-      where: { userId },
+      where: contactId ? { userId, contactId } : { userId },
       relations: [
+        'initialTransaction',
         'installments',
         'installments.settlements',
         'installments.settlements.transaction',
@@ -50,6 +49,9 @@ export class ContactsUseCase {
     >();
 
     for (const c of commitments) {
+      if (c.initialTransaction?.status === 'REVERSED') {
+        continue;
+      }
       const current = statsByContact.get(c.contactId) || {
         receivable: 0,
         payable: 0,
@@ -69,18 +71,38 @@ export class ContactsUseCase {
       statsByContact.set(c.contactId, current);
     }
 
-    return contacts.map((ct) => {
-      const stats = statsByContact.get(ct.id) || { receivable: 0, payable: 0, count: 0 };
-      return {
-        id: ct.id,
-        name: ct.name,
-        notes: ct.notes ?? null,
-        createdAt: ct.createdAt.toISOString(),
-        activeReceivable: roundMoney(stats.receivable),
-        activePayable: roundMoney(stats.payable),
-        commitmentCount: stats.count,
-      };
-    });
+    return statsByContact;
+  }
+
+  private toContactDto(
+    ct: ContactEntity,
+    stats: { receivable: number; payable: number; count: number } = {
+      receivable: 0,
+      payable: 0,
+      count: 0,
+    },
+  ): ContactDto {
+    return {
+      id: ct.id,
+      name: ct.name,
+      notes: ct.notes ?? null,
+      createdAt: ct.createdAt.toISOString(),
+      activeReceivable: roundMoney(stats.receivable),
+      activePayable: roundMoney(stats.payable),
+      commitmentCount: stats.count,
+    };
+  }
+
+  async list(userId: string): Promise<ContactDto[]> {
+    const [contacts, statsByContact] = await Promise.all([
+      this.contactRepository.find({
+        where: { userId },
+        order: { name: 'ASC' },
+      }),
+      this.loadStatsByContact(userId),
+    ]);
+
+    return contacts.map((ct) => this.toContactDto(ct, statsByContact.get(ct.id)));
   }
 
   async create(userId: string, dto: CreateContactRequest): Promise<ContactDto> {
@@ -104,15 +126,7 @@ export class ContactsUseCase {
     });
     const saved = await this.contactRepository.save(entity);
 
-    return {
-      id: saved.id,
-      name: saved.name,
-      notes: saved.notes ?? null,
-      createdAt: saved.createdAt.toISOString(),
-      activeReceivable: 0,
-      activePayable: 0,
-      commitmentCount: 0,
-    };
+    return this.toContactDto(saved);
   }
 
   async update(userId: string, contactId: string, dto: UpdateContactRequest): Promise<ContactDto> {
@@ -144,12 +158,8 @@ export class ContactsUseCase {
     }
 
     const saved = await this.contactRepository.save(contact);
-    return {
-      id: saved.id,
-      name: saved.name,
-      notes: saved.notes ?? null,
-      createdAt: saved.createdAt.toISOString(),
-    };
+    const statsByContact = await this.loadStatsByContact(userId, saved.id);
+    return this.toContactDto(saved, statsByContact.get(saved.id));
   }
 
   async delete(userId: string, contactId: string): Promise<{ success: boolean }> {

@@ -142,9 +142,9 @@ export default function DailyView({
                   month: 'short',
                 })}
               </span>
-              <span className="text-[10px] font-semibold text-slate-400">
+              <span className="text-3xs font-semibold text-slate-400">
                 Flujo del día:{' '}
-                <span className="font-bold text-slate-600 dark:text-slate-300">
+                <span className="font-bold tracking-tight tabular-nums text-slate-600 dark:text-slate-300">
                   {formatCurrency(dayDebits, baseCurrency)}
                 </span>
               </span>
@@ -216,20 +216,20 @@ export default function DailyView({
                           >
                             {tx.description}
                           </p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">
+                          <p className="text-3xs text-slate-400 mt-0.5">
                             {tx.entries.length} apuntes
                             {isReversed && (
-                              <span className="ml-1.5 text-red-500 font-bold uppercase tracking-wider text-[8px] bg-red-50 dark:bg-red-950/20 px-1 py-0.5 rounded-md">
+                              <span className="ml-1.5 text-red-500 font-bold uppercase tracking-wider text-5xs bg-red-50 dark:bg-red-950/20 px-1 py-0.5 rounded-md">
                                 Anulado
                               </span>
                             )}
                             {isReversion && (
-                              <span className="ml-1.5 text-amber-500 font-bold uppercase tracking-wider text-[8px] bg-amber-50 dark:bg-amber-950/20 px-1 py-0.5 rounded-md">
+                              <span className="ml-1.5 text-amber-500 font-bold uppercase tracking-wider text-5xs bg-amber-50 dark:bg-amber-950/20 px-1 py-0.5 rounded-md">
                                 Reversión
                               </span>
                             )}
                             {originMeta && (
-                              <span className="ml-1.5 inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider text-[8px] bg-indigo-50 dark:bg-indigo-950/30 px-1.5 py-0.5 rounded-md">
+                              <span className="ml-1.5 inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider text-5xs bg-indigo-50 dark:bg-indigo-950/30 px-1.5 py-0.5 rounded-md">
                                 <Lock className="w-2.5 h-2.5" />
                                 {originMeta.label}
                               </span>
@@ -241,7 +241,7 @@ export default function DailyView({
                       <div className="flex items-center space-x-2 text-right">
                         <div>
                           <p
-                            className={`text-xs font-extrabold ${
+                            className={`text-xs font-bold tracking-tight tabular-nums ${
                               isReversed
                                 ? 'line-through text-slate-400'
                                 : isExpense
@@ -271,14 +271,14 @@ export default function DailyView({
                     {isExpanded && (
                       <div className="px-4 pb-3 pt-3 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-200 dark:border-slate-700/80 rounded-b-2xl animate-in fade-in duration-200">
                         <div className="space-y-3">
-                          <p className="font-bold text-[10px] text-slate-400 dark:text-slate-400 uppercase tracking-widest px-1">
+                          <p className="font-bold text-3xs text-slate-400 dark:text-slate-400 uppercase tracking-widest px-1">
                             Detalles del Asiento
                           </p>
 
                           <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse text-xs">
                               <thead>
-                                <tr className="border-b border-slate-200/60 dark:border-slate-800/80 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                                <tr className="border-b border-slate-200/60 dark:border-slate-800/80 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider text-3xs">
                                   <th className="py-2 px-2 text-left font-semibold">
                                     Cuenta / Categoría
                                   </th>
@@ -303,14 +303,14 @@ export default function DailyView({
                                           <span className="font-semibold text-slate-700 dark:text-slate-200">
                                             {entry.account.name}
                                           </span>
-                                          <span className="text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 px-1.5 py-0.5 rounded-md tracking-wider">
+                                          <span className="text-4xs font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 px-1.5 py-0.5 rounded-md tracking-wider">
                                             {entry.account.type}
                                           </span>
                                         </div>
                                       </td>
                                       <td className="py-2.5 px-2 text-right">
                                         {entry.entryType === 'DEBIT' ? (
-                                          <span className="font-extrabold text-red-500/90 dark:text-red-400">
+                                          <span className="font-bold tracking-tight tabular-nums text-slate-800 dark:text-slate-200">
                                             {formatCurrency(entry.amount, entryCurrency)}
                                           </span>
                                         ) : (
@@ -321,7 +321,7 @@ export default function DailyView({
                                       </td>
                                       <td className="py-2.5 px-2 text-right">
                                         {entry.entryType === 'CREDIT' ? (
-                                          <span className="font-extrabold text-green-600 dark:text-green-400">
+                                          <span className="font-bold tracking-tight tabular-nums text-slate-800 dark:text-slate-200">
                                             {formatCurrency(entry.amount, entryCurrency)}
                                           </span>
                                         ) : (
@@ -341,7 +341,7 @@ export default function DailyView({
                           <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                             {isControlled ? (
                               <div className="flex flex-wrap items-center justify-between w-full gap-2">
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                <span className="text-2xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                                   <Lock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                                   <span>
                                     Asiento gestionado desde{' '}
@@ -354,7 +354,7 @@ export default function DailyView({
                                   <Link
                                     href={originMeta.href}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold text-3xs transition duration-200 shadow-sm"
                                   >
                                     <span>Gestionar en {originMeta.label}</span>
                                     <ExternalLink className="w-3 h-3" />
@@ -370,7 +370,7 @@ export default function DailyView({
                                       e.stopPropagation();
                                       onDelete(tx.id);
                                     }}
-                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-500 hover:text-red-600 dark:text-slate-400 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-500 hover:text-red-600 dark:text-slate-400 rounded-xl font-bold text-3xs transition duration-200 shadow-sm"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                     <span>Eliminar</span>
@@ -380,7 +380,7 @@ export default function DailyView({
                                 {/* Clone Button */}
                                 <Link
                                   href={`/transactions/new?cloneFrom=${tx.id}`}
-                                  className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                  className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-3xs transition duration-200 shadow-sm"
                                 >
                                   <Copy className="w-3 h-3" />
                                   <span>Duplicar</span>
@@ -390,7 +390,7 @@ export default function DailyView({
                                 {!isReversed && !isReversion && (
                                   <Link
                                     href={`/transactions/new?edit=${tx.id}`}
-                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-3xs transition duration-200 shadow-sm"
                                   >
                                     <Edit className="w-3 h-3" />
                                     <span>Editar</span>
@@ -404,7 +404,7 @@ export default function DailyView({
                                       e.stopPropagation();
                                       onReverse(tx.id);
                                     }}
-                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-red-200 dark:border-red-900 bg-red-50/50 hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-red-200 dark:border-red-900 bg-red-50/50 hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl font-bold text-3xs transition duration-200 shadow-sm"
                                   >
                                     <RefreshCw className="w-3 h-3" />
                                     <span>Anular / Reversar</span>

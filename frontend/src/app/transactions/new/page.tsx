@@ -388,11 +388,11 @@ function TransactionPageContent() {
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              <span className="text-3xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                 Transacciones /
               </span>
               {isEditMode && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-mono font-medium">
+                <span className="text-3xs px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-mono font-medium">
                   ID: {editId}
                 </span>
               )}

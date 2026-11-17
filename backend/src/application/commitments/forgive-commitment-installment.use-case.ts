@@ -14,6 +14,7 @@ import {
 } from '../../domain/commitments/commitment-calculator';
 import { SystemAccountService } from './system-account.service';
 import { GetCommitmentsUseCase } from './get-commitments.use-case';
+import { isControlAccount } from '../ledger/transaction-guards';
 
 @Injectable()
 export class ForgiveCommitmentInstallmentUseCase {
@@ -55,6 +56,16 @@ export class ForgiveCommitmentInstallmentUseCase {
         });
         if (!expAcc) {
           throw new NotFoundException('Cuenta de ajuste o pérdida no encontrada');
+        }
+        if (expAcc.isCashOrBank) {
+          throw new BadRequestException(
+            'La condonación no puede imputarse contra una cuenta de efectivo o banco',
+          );
+        }
+        if (isControlAccount(expAcc)) {
+          throw new BadRequestException(
+            'La condonación no puede imputarse contra una cuenta de control',
+          );
         }
         adjustmentAccountId = expAcc.id;
       } else if (commitment.categoryAccountId) {

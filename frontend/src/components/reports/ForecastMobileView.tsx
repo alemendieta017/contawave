@@ -459,7 +459,7 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
                   <span className="text-xs">Saldo Final de Caja</span>
                 </div>
                 <p
-                  className={`font-extrabold tabular-nums text-xs sm:text-sm truncate ${
+                  className={`font-bold tracking-tight tabular-nums text-xs sm:text-sm truncate ${
                     (activeMonth?.finalCash || 0) >= 0
                       ? 'text-indigo-950 dark:text-indigo-100'
                       : 'text-rose-600 dark:text-rose-400'
@@ -557,12 +557,12 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
             <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 rounded-2xl p-4 shadow-xs flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Wallet className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200">
+                <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200">
                   Resultado Neto (P&L)
                 </span>
               </div>
               <span
-                className={`text-xs sm:text-sm font-extrabold tabular-nums ${
+                className={`text-xs sm:text-sm font-bold tracking-tight tabular-nums ${
                   netProfitVal >= 0
                     ? 'text-indigo-950 dark:text-indigo-100'
                     : 'text-rose-600 dark:text-rose-400'
@@ -658,7 +658,7 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
                   Total Entradas
                 </span>
               </div>
-              <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-300 tabular-nums">
+              <span className="text-xs font-bold tracking-tight text-emerald-700 dark:text-emerald-300 tabular-nums">
                 {formatCurrency(activeMonth?.totalEntradas || 0, baseCurrency)}
               </span>
             </div>
@@ -747,7 +747,7 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
                   Total Salidas
                 </span>
               </div>
-              <span className="text-xs font-extrabold text-rose-700 dark:text-rose-300 tabular-nums">
+              <span className="text-xs font-bold tracking-tight text-rose-700 dark:text-rose-300 tabular-nums">
                 {formatCurrency(Math.abs(activeMonth?.totalSalidas || 0), baseCurrency)}
               </span>
             </div>
@@ -761,7 +761,7 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
                 </span>
               </div>
               <span
-                className={`text-xs font-extrabold tabular-nums ${
+                className={`text-xs font-bold tracking-tight tabular-nums ${
                   (activeMonth?.netFlow || 0) >= 0
                     ? 'text-emerald-700 dark:text-emerald-400'
                     : 'text-rose-600 dark:text-rose-400'
@@ -776,12 +776,12 @@ export const ForecastMobileView: React.FC<ForecastMobileViewProps> = ({
             <div className="bg-indigo-50/90 dark:bg-indigo-950/50 border-2 border-indigo-300/80 dark:border-indigo-800/80 rounded-2xl p-4 shadow-xs flex items-center justify-between">
               <div className="flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span className="text-xs font-extrabold text-indigo-950 dark:text-indigo-100 tracking-tight">
+                <span className="text-xs font-bold text-indigo-950 dark:text-indigo-100 tracking-tight">
                   Saldo Final de Caja
                 </span>
               </div>
               <span
-                className={`text-xs sm:text-sm font-black tabular-nums ${
+                className={`text-xs sm:text-sm font-bold tracking-tight tabular-nums ${
                   (activeMonth?.finalCash || 0) >= 0
                     ? 'text-indigo-950 dark:text-indigo-100'
                     : 'text-rose-600 dark:text-rose-400'

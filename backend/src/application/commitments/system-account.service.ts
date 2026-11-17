@@ -155,6 +155,9 @@ export class SystemAccountService {
     if (params.amountBase <= 0) {
       throw new BadRequestException('El monto del asiento debe ser mayor a 0');
     }
+    if (params.debitAccountId === params.creditAccountId) {
+      throw new BadRequestException('Las cuentas de Debe y Haber no pueden ser la misma');
+    }
 
     await this.ensurePeriodService.ensurePeriod(em, userId, params.accountingDate.substring(0, 7));
 

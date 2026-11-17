@@ -438,7 +438,7 @@ export default function CommitmentDetailPage() {
                       </div>
                       <div className="text-right">
                         <span className="text-slate-500 dark:text-slate-400 block">Pendiente</span>
-                        <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100 tabular-nums">
+                        <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100 tabular-nums">
                           {formatCurrency(inst.pendingAmount, baseCurrency)}
                         </span>
                       </div>
@@ -539,7 +539,7 @@ export default function CommitmentDetailPage() {
                         <td className="px-4 py-3 text-right tabular-nums text-slate-600 dark:text-slate-400 whitespace-nowrap">
                           {formatCurrency(inst.amount, baseCurrency)}
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        <td className="px-4 py-3 text-right tabular-nums font-bold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           {formatCurrency(inst.pendingAmount, baseCurrency)}
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -636,7 +636,7 @@ export default function CommitmentDetailPage() {
                     </div>
 
                     <div className="flex items-center gap-3 self-end sm:self-center">
-                      <span className="text-sm font-extrabold tabular-nums text-slate-900 dark:text-slate-100">
+                      <span className="text-sm font-bold tracking-tight tabular-nums text-slate-900 dark:text-slate-100">
                         {formatCurrency(s.amount, baseCurrency)}
                       </span>
                       <button

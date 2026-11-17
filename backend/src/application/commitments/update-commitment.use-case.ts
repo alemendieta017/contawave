@@ -10,7 +10,11 @@ import {
 import { CommitmentEntity } from '../../infrastructure/database/entities/commitment.entity';
 import { ContactEntity } from '../../infrastructure/database/entities/contact.entity';
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
-import { buildCommitmentTransactionDescription } from '../../domain/commitments/commitment-calculator';
+import {
+  buildCommitmentTransactionDescription,
+  calculateCommitmentDerived,
+  calculateInstallmentDerived,
+} from '../../domain/commitments/commitment-calculator';
 import { SystemAccountService } from './system-account.service';
 import { GetCommitmentsUseCase } from './get-commitments.use-case';
 
@@ -76,7 +80,13 @@ export class UpdateCommitmentUseCase {
     await this.dataSource.transaction('SERIALIZABLE', async (em) => {
       const commitment = await em.findOne(CommitmentEntity, {
         where: { id: commitmentId, userId },
-        relations: ['contact', 'initialTransaction'],
+        relations: [
+          'contact',
+          'initialTransaction',
+          'installments',
+          'installments.settlements',
+          'installments.settlements.transaction',
+        ],
       });
       if (!commitment) {
         throw new NotFoundException(`Compromiso con ID ${commitmentId} no encontrado`);
@@ -91,6 +101,7 @@ export class UpdateCommitmentUseCase {
           throw new NotFoundException('Contacto seleccionado no encontrado');
         }
         commitment.contactId = nextContact.id;
+        commitment.contact = nextContact;
         contactName = nextContact.name;
       }
 
@@ -121,6 +132,17 @@ export class UpdateCommitmentUseCase {
       );
 
       if (originChanged) {
+        const derivedInsts = (commitment.installments || []).map((inst) => ({
+          dueDate: inst.dueDate ? String(inst.dueDate) : null,
+          ...calculateInstallmentDerived(inst),
+        }));
+        const derived = calculateCommitmentDerived(commitment.totalAmount, derivedInsts);
+        if (derived.settledAmount > 0.0001) {
+          throw new BadRequestException(
+            'No se puede modificar el origen contable de un compromiso con cobros o pagos registrados',
+          );
+        }
+
         const resolved = await this.resolveOriginAccounts(
           em,
           userId,

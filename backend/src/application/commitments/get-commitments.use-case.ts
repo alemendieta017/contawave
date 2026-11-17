@@ -53,7 +53,7 @@ export class GetCommitmentsUseCase {
       relations: COMMITMENT_RELATIONS,
     });
 
-    if (!entity) {
+    if (!entity || entity.initialTransaction?.status === 'REVERSED') {
       throw new NotFoundException(`Compromiso con ID ${commitmentId} no encontrado`);
     }
 
