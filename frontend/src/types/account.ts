@@ -10,6 +10,8 @@ export interface AccountOption {
   decimalPlaces?: number;
   parentId?: string | null;
   systemRole?: string | null;
+  isControlAccount?: boolean;
+  controlType?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
   balance?: number;
   isCashOrBank?: boolean;

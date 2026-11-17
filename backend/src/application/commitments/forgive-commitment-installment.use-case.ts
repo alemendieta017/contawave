@@ -83,6 +83,8 @@ export class ForgiveCommitmentInstallmentUseCase {
           debitAccountId,
           creditAccountId,
           amountBase: derived.pendingAmount,
+          originModule: 'COMMITMENT',
+          originEntityId: commitment.id,
         });
 
       const adjustmentEntry = isInflow ? debitEntry : creditEntry;

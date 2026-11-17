@@ -5,6 +5,7 @@ import { ContactEntity } from '../../entities/contact.entity';
 import { CommitmentEntity } from '../../entities/commitment.entity';
 import { CommitmentInstallmentEntity } from '../../entities/commitment-installment.entity';
 import { CommitmentSettlementEntity } from '../../entities/commitment-settlement.entity';
+import { TransactionEntity } from '../../entities/transaction.entity';
 import { BalanceUpdateService } from '../../../../application/periods/balance-update.service';
 import {
   buildCommitmentTransactionDescription,
@@ -105,6 +106,7 @@ export async function seedDefaultCommitments(
       'Préstamo personal a Juan Pérez',
     ),
     accountingDate: loanOriginDate,
+    originModule: 'COMMITMENT',
     entries: [
       { accountId: acctAr.id, debit: 1500000, credit: 0 },
       { accountId: acctBanco.id, debit: 0, credit: 1500000 },
@@ -131,6 +133,7 @@ export async function seedDefaultCommitments(
       initialTransactionId: loanTx.id,
     }),
   );
+  await em.update(TransactionEntity, { id: loanTx.id }, { originEntityId: c1.id });
 
   const c1Due1 = String(prevPeriod.startDate).slice(0, 7) + '-25';
   const c1Due2 = clampToPeriods(addDaysIso(todayIso, 5), periods, currentPeriod);
@@ -164,6 +167,8 @@ export async function seedDefaultCommitments(
   const c1SettleTx = await builder.createTransaction({
     description: 'Cobro Cuota 1 - Préstamo personal a Juan Pérez',
     accountingDate: c1SettleDate,
+    originModule: 'COMMITMENT',
+    originEntityId: c1.id,
     entries: [
       { accountId: acctBanco.id, debit: 500000, credit: 0 },
       { accountId: acctAr.id, debit: 0, credit: 500000 },
@@ -196,6 +201,7 @@ export async function seedDefaultCommitments(
       'Diseño de sitio web corporativo',
     ),
     accountingDate: webOriginDate,
+    originModule: 'COMMITMENT',
     entries: [
       { accountId: acctAr.id, debit: 2400000, credit: 0 },
       { accountId: acctIngresosExtra.id, debit: 0, credit: 2400000 },
@@ -222,6 +228,7 @@ export async function seedDefaultCommitments(
       initialTransactionId: webTx.id,
     }),
   );
+  await em.update(TransactionEntity, { id: webTx.id }, { originEntityId: c2.id });
   const c2Due1 = clampToPeriods(addDaysIso(todayIso, -3), periods, currentPeriod);
   const c2Due2 = String(nextPeriod.startDate).slice(0, 7) + '-15';
   await em.save(CommitmentInstallmentEntity, [
@@ -248,6 +255,7 @@ export async function seedDefaultCommitments(
       'Renovación servidores y soporte técnico',
     ),
     accountingDate: cloudOriginDate,
+    originModule: 'COMMITMENT',
     entries: [
       { accountId: acctServicios.id, debit: 900000, credit: 0 },
       { accountId: acctAp.id, debit: 0, credit: 900000 },
@@ -274,6 +282,7 @@ export async function seedDefaultCommitments(
       initialTransactionId: cloudTx.id,
     }),
   );
+  await em.update(TransactionEntity, { id: cloudTx.id }, { originEntityId: c3.id });
   const c3Due1 = clampToPeriods(addDaysIso(todayIso, 8), periods, currentPeriod);
   const c3Due2 = String(nextPeriod.startDate).slice(0, 7) + '-23';
   await em.save(CommitmentInstallmentEntity, [
@@ -300,6 +309,7 @@ export async function seedDefaultCommitments(
       'Saldo previo acordado por consultoría',
     ),
     accountingDate: openOriginDate,
+    originModule: 'COMMITMENT',
     entries: [
       { accountId: acctAr.id, debit: 500000, credit: 0 },
       { accountId: acctCapital.id, debit: 0, credit: 500000 },
@@ -326,6 +336,7 @@ export async function seedDefaultCommitments(
       initialTransactionId: openTx.id,
     }),
   );
+  await em.update(TransactionEntity, { id: openTx.id }, { originEntityId: c4.id });
   await em.save(
     CommitmentInstallmentEntity,
     em.create(CommitmentInstallmentEntity, {

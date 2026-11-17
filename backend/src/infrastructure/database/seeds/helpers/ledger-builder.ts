@@ -1,4 +1,5 @@
 import { EntityManager } from 'typeorm';
+import { TransactionOriginModule } from '@sistema-contable/shared';
 import { TransactionEntity } from '../../entities/transaction.entity';
 import { JournalEntryEntity } from '../../entities/journal-entry.entity';
 
@@ -11,6 +12,8 @@ export class LedgerBuilder {
   async createTransaction(data: {
     description: string;
     accountingDate: string;
+    originModule?: TransactionOriginModule;
+    originEntityId?: string | null;
     entries: { accountId: string; debit: number; credit: number }[];
   }) {
     const totalDebit = data.entries.reduce((sum, e) => sum + e.debit, 0);
@@ -28,6 +31,8 @@ export class LedgerBuilder {
       description: data.description,
       accountingDate: data.accountingDate,
       status: 'POSTED',
+      originModule: data.originModule ?? 'MANUAL',
+      originEntityId: data.originEntityId ?? null,
     });
     const savedTx = await this.em.save(TransactionEntity, transaction);
 

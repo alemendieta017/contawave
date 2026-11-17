@@ -112,10 +112,12 @@ describe('BudgetMatrixGrid Options Menu & Nature Editing', () => {
     test('renders direction icons and options menu with nature editing and replicate option', () => {
       render(<BudgetMatrixGrid {...defaultProps} viewMode="monthly" />);
 
-      // Direction icons with titles
+      // Direction badges with titles and contextual labels
       expect(screen.getByText('Aporte Mensual Vanguard')).toBeInTheDocument();
       expect(screen.getAllByTitle('Salida de efectivo').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByTitle('Entrada de efectivo').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Salida').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Entrada').length).toBeGreaterThanOrEqual(1);
 
       // Open options menu for the balance row
       const actionButtons = screen.getAllByTitle('Acciones');

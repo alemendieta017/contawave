@@ -6,7 +6,9 @@ import {
   JoinColumn,
   OneToMany,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
+import { TransactionOriginModule } from '@sistema-contable/shared';
 import { UserEntity } from './user.entity';
 import { JournalEntryEntity } from './journal-entry.entity';
 
@@ -37,6 +39,13 @@ export class TransactionEntity {
   @ManyToOne(() => TransactionEntity)
   @JoinColumn({ name: 'reversal_of_id' })
   reversalOf: TransactionEntity;
+
+  @Index()
+  @Column({ name: 'origin_module', type: 'varchar', length: 30, default: 'MANUAL' })
+  originModule: TransactionOriginModule;
+
+  @Column({ name: 'origin_entity_id', type: 'uuid', nullable: true })
+  originEntityId: string | null;
 
   @OneToMany(() => JournalEntryEntity, (entry) => entry.transaction)
   entries: JournalEntryEntity[];

@@ -107,6 +107,39 @@ describe('Budget Matrix Integration Tests', () => {
       status: 'ACTIVE',
       userId: 'user-1',
     },
+    {
+      id: 'acc-cxc',
+      name: 'Cuentas por Cobrar',
+      type: 'ASSET',
+      parentId: null,
+      isCashOrBank: false,
+      isControlAccount: true,
+      systemRole: 'ACCOUNTS_RECEIVABLE',
+      status: 'ACTIVE',
+      userId: 'user-1',
+    },
+    {
+      id: 'acc-cxp',
+      name: 'Cuentas por Pagar',
+      type: 'LIABILITY',
+      parentId: null,
+      isCashOrBank: false,
+      isControlAccount: true,
+      systemRole: 'ACCOUNTS_PAYABLE',
+      status: 'ACTIVE',
+      userId: 'user-1',
+    },
+    {
+      id: 'acc-capital',
+      name: 'Capital',
+      type: 'EQUITY',
+      parentId: null,
+      isCashOrBank: false,
+      isControlAccount: false,
+      systemRole: 'CAPITAL',
+      status: 'ACTIVE',
+      userId: 'user-1',
+    },
   ];
 
   beforeEach(async () => {
@@ -305,6 +338,17 @@ describe('Budget Matrix Integration Tests', () => {
         isNegative: false,
         shortfall: 0,
       });
+    });
+
+    it('should exclude control accounts (CxC/CxP), EQUITY, and CAPITAL system accounts from planning quadrants', async () => {
+      const result = await getMatrixUseCase.execute('user-1', '2026-10', 4);
+      const allRowIds = (result.rows || []).map((r) => r.accountId);
+
+      expect(allRowIds).not.toContain('acc-cxc');
+      expect(allRowIds).not.toContain('acc-cxp');
+      expect(allRowIds).not.toContain('acc-capital');
+      expect(allRowIds).toContain('acc-3');
+      expect(allRowIds).toContain('acc-4');
     });
 
     it('should filter by category when categoryId is passed', async () => {

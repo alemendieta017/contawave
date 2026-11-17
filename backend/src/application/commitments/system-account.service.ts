@@ -5,7 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { SystemRole, DEFAULT_STARTER_ACCOUNTS } from '@sistema-contable/shared';
+import {
+  SystemRole,
+  DEFAULT_STARTER_ACCOUNTS,
+  TransactionOriginModule,
+} from '@sistema-contable/shared';
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
 import { CurrencyEntity } from '../../infrastructure/database/entities/currency.entity';
 import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
@@ -19,6 +23,8 @@ export interface DoubleEntryPostParams {
   debitAccountId: string;
   creditAccountId: string;
   amountBase: number;
+  originModule?: TransactionOriginModule;
+  originEntityId?: string | null;
 }
 
 export interface DoubleEntryPostResult {
@@ -43,15 +49,21 @@ export class SystemAccountService {
       where: { userId, systemRole: role },
       lock: { mode: 'pessimistic_write' },
     });
+    const def = DEFAULT_STARTER_ACCOUNTS.find((a) => a.systemRole === role);
     if (existingByRole) {
+      let dirty = false;
       if (existingByRole.status === 'INACTIVE') {
         existingByRole.status = 'ACTIVE';
-        return em.save(AccountEntity, existingByRole);
+        dirty = true;
       }
-      return existingByRole;
+      if (def?.isControlAccount && !existingByRole.isControlAccount) {
+        existingByRole.isControlAccount = true;
+        existingByRole.controlType = def.controlType || null;
+        dirty = true;
+      }
+      return dirty ? em.save(AccountEntity, existingByRole) : existingByRole;
     }
 
-    const def = DEFAULT_STARTER_ACCOUNTS.find((a) => a.systemRole === role);
     if (!def) {
       throw new InternalServerErrorException(`System role definition not found for ${role}`);
     }
@@ -63,6 +75,8 @@ export class SystemAccountService {
     if (existingByName) {
       existingByName.systemRole = role;
       existingByName.status = 'ACTIVE';
+      existingByName.isControlAccount = !!def.isControlAccount;
+      existingByName.controlType = def.controlType || null;
       return em.save(AccountEntity, existingByName);
     }
 
@@ -84,6 +98,8 @@ export class SystemAccountService {
       status: 'ACTIVE',
       isCashOrBank: !!def.isCashOrBank,
       systemRole: role,
+      isControlAccount: !!def.isControlAccount,
+      controlType: def.controlType || null,
       metadata: null,
       parentId: null,
     });
@@ -166,6 +182,8 @@ export class SystemAccountService {
       accountingDate: params.accountingDate,
       description: params.description,
       status: 'POSTED',
+      originModule: params.originModule ?? 'MANUAL',
+      originEntityId: params.originEntityId ?? null,
     });
     const savedTx = await em.save(TransactionEntity, tx);
 

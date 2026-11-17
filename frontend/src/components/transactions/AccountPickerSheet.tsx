@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ChevronDown, Plus, X, Check } from 'lucide-react';
+import { Search, ChevronDown, Plus, X, Check, Lock } from 'lucide-react';
 import { formatCurrency, cn, type CurrencyInfo } from '../../lib/utils';
 import type { AccountOption } from '../../types/account';
 import { AccountType } from '@sistema-contable/shared';
@@ -44,6 +44,44 @@ const ALL_TABS: TabConfig[] = [
   { id: AccountType.INCOME, type: AccountType.INCOME, label: 'Ingresos', dot: 'bg-sky-500' },
   { id: AccountType.EQUITY, type: AccountType.EQUITY, label: 'Patrimonio', dot: 'bg-violet-500' },
 ];
+
+function getControlAccountMeta(
+  account: Pick<AccountOption, 'isControlAccount' | 'controlType' | 'systemRole'>,
+): { moduleName: string; tooltip: string } | null {
+  const isControl =
+    Boolean(account.isControlAccount) ||
+    account.systemRole === 'ACCOUNTS_RECEIVABLE' ||
+    account.systemRole === 'ACCOUNTS_PAYABLE';
+  if (!isControl) return null;
+
+  if (
+    account.controlType === 'RECEIVABLE' ||
+    account.controlType === 'PAYABLE' ||
+    account.systemRole === 'ACCOUNTS_RECEIVABLE' ||
+    account.systemRole === 'ACCOUNTS_PAYABLE'
+  ) {
+    return {
+      moduleName: 'Pagos y Cobros',
+      tooltip: 'Gestionada desde el módulo Pagos y Cobros',
+    };
+  }
+  if (account.controlType === 'LOAN') {
+    return {
+      moduleName: 'Préstamos',
+      tooltip: 'Gestionada desde el módulo Préstamos',
+    };
+  }
+  if (account.controlType === 'CREDIT_CARD') {
+    return {
+      moduleName: 'Tarjetas de Crédito',
+      tooltip: 'Gestionada desde el módulo Tarjetas de Crédito',
+    };
+  }
+  return {
+    moduleName: 'Módulo especializado',
+    tooltip: 'Gestionada desde su módulo especializado',
+  };
+}
 
 const ORDERED_GROUPS: Array<{
   type: AccountType;
@@ -155,7 +193,7 @@ export default function AccountPickerSheet({
   // Operable accounts pool
   const operableAccounts = useMemo(() => {
     return accounts.filter((a) => {
-      // Exclude system accounts
+      // Exclude non-operable NET_INCOME system account
       if (a.systemRole === 'NET_INCOME') return false;
       // Exclude inactive accounts unless currently selected
       if (a.status === 'INACTIVE' && a.id !== selectedAccountId) return false;
@@ -222,7 +260,9 @@ export default function AccountPickerSheet({
     }
     displayGroups.forEach((grp) => {
       grp.accounts.forEach((acc) => {
-        items.push({ kind: 'ACCOUNT', account: acc });
+        if (!getControlAccountMeta(acc)) {
+          items.push({ kind: 'ACCOUNT', account: acc });
+        }
       });
     });
     return items;
@@ -619,10 +659,12 @@ export default function AccountPickerSheet({
                     <div className="space-y-0.5">
                       {group.accounts.map((acc) => {
                         const isSelected = acc.id === selectedAccountId;
+                        const controlMeta = getControlAccountMeta(acc);
+                        const isLocked = Boolean(controlMeta);
                         const flatIdx = flatItems.findIndex(
                           (item) => item.kind === 'ACCOUNT' && item.account.id === acc.id,
                         );
-                        const isFocused = flatIdx === focusedIndex;
+                        const isFocused = !isLocked && flatIdx === focusedIndex;
 
                         return (
                           <button
@@ -630,16 +672,25 @@ export default function AccountPickerSheet({
                             type="button"
                             role="option"
                             aria-selected={isSelected}
+                            aria-disabled={isLocked}
+                            disabled={isLocked}
+                            title={controlMeta?.tooltip}
                             data-testid={`account-option-${acc.id}`}
                             id={`account-sheet-opt-${acc.id}`}
-                            onClick={() => handleSelectAccount(acc)}
+                            onClick={() => {
+                              if (!isLocked) {
+                                handleSelectAccount(acc);
+                              }
+                            }}
                             className={cn(
                               'w-full text-left px-3.5 py-2.5 min-h-11 rounded-xl text-xs transition flex items-center justify-between gap-3 group outline-none',
-                              isSelected
-                                ? 'bg-indigo-50/80 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 font-semibold'
-                                : isFocused
-                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100'
-                                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800',
+                              isLocked
+                                ? 'opacity-65 cursor-not-allowed bg-slate-50/60 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400'
+                                : isSelected
+                                  ? 'bg-indigo-50/80 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 font-semibold'
+                                  : isFocused
+                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100'
+                                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800',
                             )}
                           >
                             <div className="flex flex-col min-w-0 flex-1">
@@ -649,13 +700,24 @@ export default function AccountPickerSheet({
                                 </span>
                               )}
                               <div className="flex items-center gap-1.5">
+                                {isLocked && (
+                                  <Lock
+                                    aria-hidden="true"
+                                    className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0"
+                                  />
+                                )}
                                 <span className="text-sm sm:text-xs font-medium truncate">
                                   {highlightMatch(acc.name, search)}
                                 </span>
-                                {isSelected && (
+                                {isSelected && !isLocked && (
                                   <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                                 )}
                               </div>
+                              {controlMeta && (
+                                <span className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                  {controlMeta.tooltip}
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">

@@ -133,7 +133,7 @@ export default function AccountsList({
             <h3 className="text-[10px] sm:text-3xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               {title}
             </h3>
-            <span className="text-4xs font-bold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 tabular-nums leading-none">
               {list.length}
             </span>
           </div>
@@ -189,14 +189,14 @@ export default function AccountsList({
                       )}
 
                       {a.isCashOrBank && (
-                        <span className="text-[9px] sm:text-4xs bg-slate-100 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 px-1.5 py-0.2 sm:py-0.5 rounded-md font-medium border border-slate-200/60 dark:border-slate-600/60 shrink-0">
+                        <span className="text-xs leading-none bg-slate-100 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded-md font-medium border border-slate-200/60 dark:border-slate-600/60 shrink-0">
                           Efectivo
                         </span>
                       )}
 
                       {a.systemRole && (
                         <span
-                          className="inline-flex items-center gap-1 text-2xs bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold shrink-0"
+                          className="inline-flex items-center gap-1 text-xs leading-none bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold shrink-0"
                           title="Cuenta especial reservada por el sistema"
                         >
                           <Lock className="w-2.5 h-2.5" />
@@ -218,7 +218,7 @@ export default function AccountsList({
                       )}
                     </div>
 
-                    <p className="text-4xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
                       {isChild ? 'Subcuenta • ' : ''}
                       {a.type === 'ASSET'
                         ? 'Activo'

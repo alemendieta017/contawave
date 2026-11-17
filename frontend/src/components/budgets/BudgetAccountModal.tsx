@@ -43,6 +43,8 @@ interface AccountItem {
   code?: string;
   type: string;
   isCashOrBank?: boolean;
+  isControlAccount?: boolean;
+  systemRole?: string | null;
   status?: string;
 }
 
@@ -89,9 +91,11 @@ export const BudgetAccountModal: React.FC<BudgetAccountModalProps> = ({
         const filtered = rawAccounts.filter((acc) => {
           if (acc.status && acc.status !== 'ACTIVE' && (!editRow || editRow.accountId !== acc.id))
             return false;
-          // Capital / Equity and system accounts cannot be budgeted
+          // Capital / Equity, control accounts (CxC/CxP), and system capital accounts cannot be budgeted
           if (
             (acc as any).isSystem ||
+            acc.isControlAccount ||
+            acc.systemRole === 'CAPITAL' ||
             acc.type === 'EQUITY' ||
             acc.name.toLowerCase() === 'capital'
           ) {

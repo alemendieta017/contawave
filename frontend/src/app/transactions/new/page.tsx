@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { api } from '../../../services/api';
 import {
   TransactionMode,
@@ -159,6 +160,10 @@ function TransactionPageContent() {
   const [fetchLoading, setFetchLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [controlledOrigin, setControlledOrigin] = useState<{
+    label: string;
+    href: string;
+  } | null>(null);
 
   // Track if user has modified anything
   const [isDirty, setIsDirty] = useState(false);
@@ -207,6 +212,32 @@ function TransactionPageContent() {
     try {
       const tx = await api.transactions.get(id);
       if (tx) {
+        if (tx.originModule && tx.originModule !== 'MANUAL') {
+          const originHref =
+            tx.originModule === 'COMMITMENT'
+              ? tx.originEntityId
+                ? `/commitments/${tx.originEntityId}`
+                : '/commitments'
+              : tx.originModule === 'BALANCE_ADJUSTMENT'
+                ? '/accounts'
+                : '/commitments';
+          const originLabel =
+            tx.originModule === 'COMMITMENT'
+              ? 'Pagos y Cobros'
+              : tx.originModule === 'LOAN'
+                ? 'Préstamos'
+                : tx.originModule === 'CREDIT_CARD'
+                  ? 'Tarjetas de Crédito'
+                  : 'su módulo de origen';
+          setControlledOrigin({ label: originLabel, href: originHref });
+          setError(
+            `Esta transacción es gestionada por ${originLabel} y no puede ${
+              isEditMode ? 'editarse' : 'duplicarse'
+            } manualmente desde el Libro Diario.`,
+          );
+          return;
+        }
+
         if (isEditMode) {
           if (tx.status === 'REVERSED') {
             setError('Los asientos revertidos no pueden ser editados.');
@@ -390,9 +421,20 @@ function TransactionPageContent() {
       <div className="flex-1 overflow-y-auto w-full">
         <main className="p-3.5 sm:p-6 lg:p-8 space-y-4 max-w-4xl mx-auto w-full">
           {error && (
-            <div className="p-3.5 text-xs text-red-700 bg-red-50 dark:bg-red-950/40 dark:text-red-300 rounded-2xl flex items-start gap-2.5 border border-red-200 dark:border-red-900/60 shadow-xs animate-in fade-in duration-150">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span className="font-medium">{error}</span>
+            <div className="p-3.5 text-xs text-red-700 bg-red-50 dark:bg-red-950/40 dark:text-red-300 rounded-2xl flex flex-wrap items-center justify-between gap-2.5 border border-red-200 dark:border-red-900/60 shadow-xs animate-in fade-in duration-150">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span className="font-medium">{error}</span>
+              </div>
+              {controlledOrigin && (
+                <Link
+                  href={controlledOrigin.href}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800 text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+                >
+                  <span>Ir a {controlledOrigin.label}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              )}
             </div>
           )}
           {success && (
@@ -402,35 +444,37 @@ function TransactionPageContent() {
             </div>
           )}
 
-          <div className="bg-white dark:bg-slate-900 p-4 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm transition-all">
-            {mode === TransactionMode.QUICK ? (
-              <QuickTransactionForm
-                accounts={accounts}
-                baseCurrency={baseCurrency}
-                initialValues={quickInitialValues}
-                onSubmit={handleSubmit}
-                onCancel={handleCancelClick}
-                loading={loading}
-                onQuickCreateAccount={(initialName, targetField, suggestedType) => {
-                  setIsDirty(true);
-                  setQuickCreateState({ initialName, targetField, initialType: suggestedType });
-                }}
-              />
-            ) : (
-              <FreeJournalEntryGrid
-                accounts={accounts}
-                baseCurrency={baseCurrency}
-                initialValues={freeJournalInitialValues}
-                onSubmit={handleSubmit}
-                onCancel={handleCancelClick}
-                loading={loading}
-                onQuickCreateAccount={(initialName, lineIndex, suggestedType) => {
-                  setIsDirty(true);
-                  setQuickCreateState({ initialName, lineIndex, initialType: suggestedType });
-                }}
-              />
-            )}
-          </div>
+          {!controlledOrigin && (
+            <div className="bg-white dark:bg-slate-900 p-4 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm transition-all">
+              {mode === TransactionMode.QUICK ? (
+                <QuickTransactionForm
+                  accounts={accounts}
+                  baseCurrency={baseCurrency}
+                  initialValues={quickInitialValues}
+                  onSubmit={handleSubmit}
+                  onCancel={handleCancelClick}
+                  loading={loading}
+                  onQuickCreateAccount={(initialName, targetField, suggestedType) => {
+                    setIsDirty(true);
+                    setQuickCreateState({ initialName, targetField, initialType: suggestedType });
+                  }}
+                />
+              ) : (
+                <FreeJournalEntryGrid
+                  accounts={accounts}
+                  baseCurrency={baseCurrency}
+                  initialValues={freeJournalInitialValues}
+                  onSubmit={handleSubmit}
+                  onCancel={handleCancelClick}
+                  loading={loading}
+                  onQuickCreateAccount={(initialName, lineIndex, suggestedType) => {
+                    setIsDirty(true);
+                    setQuickCreateState({ initialName, lineIndex, initialType: suggestedType });
+                  }}
+                />
+              )}
+            </div>
+          )}
         </main>
       </div>
 

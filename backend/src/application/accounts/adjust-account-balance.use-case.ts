@@ -32,6 +32,12 @@ export class AdjustAccountBalanceUseCase {
         throw new BadRequestException(`Account ${account.name} is inactive and cannot be adjusted`);
       }
 
+      if (account.isControlAccount || account.systemRole) {
+        throw new BadRequestException(
+          `La cuenta "${account.name}" es una cuenta de sistema o control y no admite ajuste manual de saldo.`,
+        );
+      }
+
       // 2. Compute current balance from journal entries
       const rawSums = await entityManager
         .createQueryBuilder(JournalEntryEntity, 'entry')

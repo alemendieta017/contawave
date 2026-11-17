@@ -25,7 +25,9 @@ export class UndoCommitmentSettlementUseCase {
       throw new NotFoundException(`Liquidación con ID ${settlementId} no encontrada`);
     }
 
-    await this.reverseTransactionUseCase.execute(userId, settlement.transactionId);
+    await this.reverseTransactionUseCase.execute(userId, settlement.transactionId, {
+      allowControlled: true,
+    });
 
     return this.getCommitmentsUseCase.getById(userId, settlement.installment.commitmentId);
   }

@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
 import { JournalEntryEntity } from '../../infrastructure/database/entities/journal-entry.entity';
 import { BalanceUpdateService } from '../periods/balance-update.service';
 import { EnsurePeriodService } from '../periods/ensure-period.service';
+import { assertTransactionMutationAllowed } from './transaction-guards';
 
 @Injectable()
 export class ReverseTransactionUseCase {
@@ -18,7 +19,7 @@ export class ReverseTransactionUseCase {
     private readonly ensurePeriodService: EnsurePeriodService,
   ) {}
 
-  async execute(userId: string, transactionId: string) {
+  async execute(userId: string, transactionId: string, options?: { allowControlled?: boolean }) {
     return this.dataSource.transaction('SERIALIZABLE', async (entityManager) => {
       // Find original transaction
       const originalTx = await entityManager.findOne(TransactionEntity, {
@@ -30,9 +31,7 @@ export class ReverseTransactionUseCase {
         throw new NotFoundException(`Transaction with ID ${transactionId} not found`);
       }
 
-      if (originalTx.status === 'REVERSED') {
-        throw new BadRequestException('Transaction is already reversed');
-      }
+      await assertTransactionMutationAllowed(entityManager, originalTx, 'reverse', options);
 
       const reversalDate = new Date().toISOString().split('T')[0];
 
@@ -43,6 +42,8 @@ export class ReverseTransactionUseCase {
         description: `Reversión de asiento: ${originalTx.description}`,
         status: 'POSTED',
         reversalOfId: originalTx.id,
+        originModule: originalTx.originModule ?? 'MANUAL',
+        originEntityId: originalTx.originEntityId ?? null,
       });
 
       // 1. Auto-provision or obtain period for reversal date

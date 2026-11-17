@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { CurrencyEntity } from './currency.entity';
-import { SystemRole } from '@sistema-contable/shared';
+import { ControlAccountType, SystemRole } from '@sistema-contable/shared';
 
 @Entity('accounts')
 @Index(['userId', 'name'], { unique: true })
@@ -48,4 +48,10 @@ export class AccountEntity {
 
   @Column({ name: 'system_role', type: 'varchar', length: 30, nullable: true })
   systemRole: SystemRole | null;
+
+  @Column({ name: 'is_control_account', type: 'boolean', default: false })
+  isControlAccount: boolean;
+
+  @Column({ name: 'control_type', type: 'varchar', length: 20, nullable: true })
+  controlType: ControlAccountType | null;
 }

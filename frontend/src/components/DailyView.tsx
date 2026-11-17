@@ -10,8 +10,11 @@ import {
   Trash2,
   Copy,
   Edit,
+  ExternalLink,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
+import type { TransactionOriginModule } from '@sistema-contable/shared';
 import { formatCurrency, CurrencyInfo } from '../lib/utils';
 
 interface Entry {
@@ -35,7 +38,31 @@ interface Transaction {
   description: string;
   status?: string;
   reversalOfId?: string | null;
+  originModule?: TransactionOriginModule;
+  originEntityId?: string | null;
   entries: Entry[];
+}
+
+function getOriginMeta(
+  originModule?: TransactionOriginModule,
+  originEntityId?: string | null,
+): { label: string; href: string | null } | null {
+  if (!originModule || originModule === 'MANUAL') return null;
+  switch (originModule) {
+    case 'COMMITMENT':
+      return {
+        label: 'Pagos y Cobros',
+        href: originEntityId ? `/commitments/${originEntityId}` : '/commitments',
+      };
+    case 'LOAN':
+      return { label: 'Préstamos', href: '/commitments' };
+    case 'CREDIT_CARD':
+      return { label: 'Tarjetas de Crédito', href: '/commitments' };
+    case 'BALANCE_ADJUSTMENT':
+      return { label: 'Ajuste de Saldo', href: '/accounts' };
+    default:
+      return { label: 'Módulo Vinculado', href: null };
+  }
 }
 
 interface DailyViewProps {
@@ -129,6 +156,8 @@ export default function DailyView({
                 const isExpanded = expandedTxId === tx.id;
                 const isReversed = tx.status === 'REVERSED';
                 const isReversion = !!tx.reversalOfId;
+                const originMeta = getOriginMeta(tx.originModule, tx.originEntityId);
+                const isControlled = Boolean(originMeta);
 
                 // Check dominant type for icon
                 const firstDebit = tx.entries.find((e) => e.entryType === 'DEBIT');
@@ -197,6 +226,12 @@ export default function DailyView({
                             {isReversion && (
                               <span className="ml-1.5 text-amber-500 font-bold uppercase tracking-wider text-[8px] bg-amber-50 dark:bg-amber-950/20 px-1 py-0.5 rounded-md">
                                 Reversión
+                              </span>
+                            )}
+                            {originMeta && (
+                              <span className="ml-1.5 inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider text-[8px] bg-indigo-50 dark:bg-indigo-950/30 px-1.5 py-0.5 rounded-md">
+                                <Lock className="w-2.5 h-2.5" />
+                                {originMeta.label}
                               </span>
                             )}
                           </p>
@@ -303,51 +338,79 @@ export default function DailyView({
                           </div>
 
                           {/* Transaction action toolbar */}
-                          <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                            {/* Delete Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(tx.id);
-                              }}
-                              className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-500 hover:text-red-600 dark:text-slate-400 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span>Eliminar</span>
-                            </button>
+                          <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            {isControlled ? (
+                              <div className="flex flex-wrap items-center justify-between w-full gap-2">
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                  <Lock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                  <span>
+                                    Asiento gestionado desde{' '}
+                                    <strong className="text-slate-700 dark:text-slate-200">
+                                      {originMeta?.label}
+                                    </strong>
+                                  </span>
+                                </span>
+                                {originMeta?.href && (
+                                  <Link
+                                    href={originMeta.href}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                  >
+                                    <span>Gestionar en {originMeta.label}</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </Link>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                {/* Delete Button (blocked for reversed/reversal entries) */}
+                                {!isReversed && !isReversion && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDelete(tx.id);
+                                    }}
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-500 hover:text-red-600 dark:text-slate-400 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Eliminar</span>
+                                  </button>
+                                )}
 
-                            {/* Clone Button */}
-                            <Link
-                              href={`/transactions/new?cloneFrom=${tx.id}`}
-                              className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
-                            >
-                              <Copy className="w-3 h-3" />
-                              <span>Duplicar</span>
-                            </Link>
+                                {/* Clone Button */}
+                                <Link
+                                  href={`/transactions/new?cloneFrom=${tx.id}`}
+                                  className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  <span>Duplicar</span>
+                                </Link>
 
-                            {/* Edit Button */}
-                            {!isReversed && !isReversion && (
-                              <Link
-                                href={`/transactions/new?edit=${tx.id}`}
-                                className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
-                              >
-                                <Edit className="w-3 h-3" />
-                                <span>Editar</span>
-                              </Link>
-                            )}
+                                {/* Edit Button */}
+                                {!isReversed && !isReversion && (
+                                  <Link
+                                    href={`/transactions/new?edit=${tx.id}`}
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                    <span>Editar</span>
+                                  </Link>
+                                )}
 
-                            {/* Reversal button if eligible */}
-                            {!isReversed && !isReversion && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onReverse(tx.id);
-                                }}
-                                className="flex items-center gap-1.5 py-1.5 px-3 border border-red-200 dark:border-red-900 bg-red-50/50 hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
-                              >
-                                <RefreshCw className="w-3 h-3" />
-                                <span>Anular / Reversar</span>
-                              </button>
+                                {/* Reversal button if eligible */}
+                                {!isReversed && !isReversion && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onReverse(tx.id);
+                                    }}
+                                    className="flex items-center gap-1.5 py-1.5 px-3 border border-red-200 dark:border-red-900 bg-red-50/50 hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl font-bold text-[10px] transition duration-200 shadow-sm"
+                                  >
+                                    <RefreshCw className="w-3 h-3" />
+                                    <span>Anular / Reversar</span>
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>

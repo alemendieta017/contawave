@@ -16,11 +16,10 @@ import {
   Edit2,
   Trash2,
   Repeat,
-  TrendingUp,
-  TrendingDown,
 } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
 import { BudgetAccountModal } from './BudgetAccountModal';
+import { CashFlowDirectionBadge } from './CashFlowDirectionBadge';
 
 export interface BudgetMatrixGridProps {
   matrixData: BudgetMatrixResponse;
@@ -368,20 +367,22 @@ export const BudgetMatrixGrid: React.FC<BudgetMatrixGridProps> = ({
                                 {row.subRowLabel || row.accountName}
                               </span>
                               {isBalanceSec && row.cashFlowDirection && (
-                                <span
-                                  className="inline-flex items-center shrink-0 select-none"
-                                  title={
-                                    row.cashFlowDirection === CashFlowDirection.EGRESO_EFECTIVO
-                                      ? 'Salida de efectivo'
-                                      : 'Entrada de efectivo'
+                                <CashFlowDirectionBadge
+                                  direction={row.cashFlowDirection}
+                                  sectionKey={sec.sectionKey}
+                                  accountType={row.accountType}
+                                  onClick={
+                                    !row.isParent
+                                      ? (e) => {
+                                          e.stopPropagation();
+                                          handleOpenEditBalanceModal(
+                                            row,
+                                            sec.sectionKey as BudgetMatrixSectionKey,
+                                          );
+                                        }
+                                      : undefined
                                   }
-                                >
-                                  {row.cashFlowDirection === CashFlowDirection.EGRESO_EFECTIVO ? (
-                                    <TrendingDown className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
-                                  ) : (
-                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-                                  )}
-                                </span>
+                                />
                               )}
                             </div>
                             {row.subRowLabel && (
@@ -687,20 +688,22 @@ export const BudgetMatrixGrid: React.FC<BudgetMatrixGridProps> = ({
                                   {row.subRowLabel || row.accountName}
                                 </span>
                                 {isBalanceSec && row.cashFlowDirection && (
-                                  <span
-                                    className="inline-flex items-center shrink-0 select-none"
-                                    title={
-                                      row.cashFlowDirection === CashFlowDirection.EGRESO_EFECTIVO
-                                        ? 'Salida de efectivo'
-                                        : 'Entrada de efectivo'
+                                  <CashFlowDirectionBadge
+                                    direction={row.cashFlowDirection}
+                                    sectionKey={sec.sectionKey}
+                                    accountType={row.accountType}
+                                    onClick={
+                                      !isParent
+                                        ? (e) => {
+                                            e.stopPropagation();
+                                            handleOpenEditBalanceModal(
+                                              row,
+                                              sec.sectionKey as BudgetMatrixSectionKey,
+                                            );
+                                          }
+                                        : undefined
                                     }
-                                  >
-                                    {row.cashFlowDirection === CashFlowDirection.EGRESO_EFECTIVO ? (
-                                      <TrendingDown className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
-                                    ) : (
-                                      <TrendingUp className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-                                    )}
-                                  </span>
+                                  />
                                 )}
                               </div>
                               {row.subRowLabel && (

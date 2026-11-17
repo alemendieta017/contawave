@@ -36,7 +36,8 @@ export class GetCommitmentsUseCase {
       order: { createdAt: 'DESC' },
     });
 
-    const commitments = entities.map((e) => mapCommitmentToDto(e, today));
+    const activeEntities = entities.filter((e) => e.initialTransaction?.status !== 'REVERSED');
+    const commitments = activeEntities.map((e) => mapCommitmentToDto(e, today));
     const kpis = computeCommitmentsKpis(commitments);
 
     return { kpis, commitments };

@@ -119,6 +119,38 @@ describe('BudgetAccountModal Component (T022 & T042)', () => {
     expect(screen.queryByText(/Capital/)).not.toBeInTheDocument();
   });
 
+  test('should exclude control accounts (Cuentas por Cobrar / Cuentas por Pagar) from selection list', async () => {
+    (api.accounts.list as jest.Mock).mockResolvedValue([
+      {
+        id: 'acc-asset-active',
+        name: 'Fondo Mutuo Renta Fija',
+        code: '1.2.01.01',
+        type: 'ASSET',
+        isCashOrBank: false,
+        isControlAccount: false,
+        status: 'ACTIVE',
+      },
+      {
+        id: 'acc-cxc',
+        name: 'Cuentas por Cobrar',
+        code: '1.1.03.01',
+        type: 'ASSET',
+        isCashOrBank: false,
+        isControlAccount: true,
+        systemRole: 'ACCOUNTS_RECEIVABLE',
+        status: 'ACTIVE',
+      },
+    ]);
+
+    render(<BudgetAccountModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Fondo Mutuo Renta Fija/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Cuentas por Cobrar/)).not.toBeInTheDocument();
+  });
+
   test('should submit correctly with selected account, direction, and concept', async () => {
     render(<BudgetAccountModal {...defaultProps} />);
 

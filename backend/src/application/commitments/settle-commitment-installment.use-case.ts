@@ -82,6 +82,8 @@ export class SettleCommitmentInstallmentUseCase {
           debitAccountId,
           creditAccountId,
           amountBase: settleAmount,
+          originModule: 'COMMITMENT',
+          originEntityId: commitment.id,
         });
 
       const cashEntry = isInflow ? debitEntry : creditEntry;

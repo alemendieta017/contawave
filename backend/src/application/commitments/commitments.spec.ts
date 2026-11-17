@@ -360,6 +360,7 @@ describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
         debitAccountId: expenseCatId,
         creditAccountId: apAccountId,
         amountBase: 500000,
+        originModule: 'COMMITMENT',
       });
     });
 
@@ -384,6 +385,7 @@ describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
         debitAccountId: arAccountId,
         creditAccountId: cashAccountId,
         amountBase: 1000000,
+        originModule: 'COMMITMENT',
       });
     });
 
@@ -404,6 +406,7 @@ describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
         debitAccountId: arAccountId,
         creditAccountId: capitalAccountId,
         amountBase: 300000,
+        originModule: 'COMMITMENT',
       });
     });
   });
@@ -465,6 +468,8 @@ describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
         debitAccountId: cashAccountId,
         creditAccountId: arAccountId,
         amountBase: 400,
+        originModule: 'COMMITMENT',
+        originEntityId: 'com-1',
       });
       expect(installment.dueDate).toBe('2026-09-15');
 
@@ -551,6 +556,8 @@ describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
         debitAccountId: incomeCatId,
         creditAccountId: arAccountId,
         amountBase: 500,
+        originModule: 'COMMITMENT',
+        originEntityId: 'com-2',
       });
       expect(savedSettlements[0].settlementType).toBe('FORGIVEN');
     });
@@ -663,7 +670,9 @@ describe('Commitments Bounded Context (Spec 00 & Spec 01)', () => {
         UndoCommitmentSettlementUseCase,
       );
       await undoUseCase.execute(userId, 'set-1');
-      expect(reverseTxMock.execute).toHaveBeenCalledWith(userId, 'tx-set-1');
+      expect(reverseTxMock.execute).toHaveBeenCalledWith(userId, 'tx-set-1', {
+        allowControlled: true,
+      });
 
       const deleteUseCase = new DeleteCommitmentUseCase(
         { transaction: (_iso: any, cb: any) => cb(emMock) } as unknown as DataSource,

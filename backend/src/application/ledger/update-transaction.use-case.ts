@@ -9,6 +9,10 @@ import { Transaction, JournalEntry } from '../../domain/ledger/ledger.model';
 import { CreateTransactionDto } from './create-transaction.use-case';
 import { BalanceUpdateService } from '../periods/balance-update.service';
 import { EnsurePeriodService } from '../periods/ensure-period.service';
+import {
+  assertAccountOperableForManualEntry,
+  assertTransactionMutationAllowed,
+} from './transaction-guards';
 
 @Injectable()
 export class UpdateTransactionUseCase {
@@ -41,13 +45,7 @@ export class UpdateTransactionUseCase {
         throw new NotFoundException(`Transaction with ID ${transactionId} not found`);
       }
 
-      if (originalTx.status === 'REVERSED') {
-        throw new BadRequestException('Cannot update a reversed transaction');
-      }
-
-      if (originalTx.reversalOfId !== null && originalTx.reversalOfId !== undefined) {
-        throw new BadRequestException('Cannot update a reversal transaction');
-      }
+      await assertTransactionMutationAllowed(entityManager, originalTx, 'update');
 
       // 1. Ensure period exists for new transaction date
       const oldTxDate = originalTx.accountingDate;
@@ -89,15 +87,7 @@ export class UpdateTransactionUseCase {
           where: { id: account.currencyId },
         });
 
-        if (account.status === 'INACTIVE') {
-          throw new BadRequestException(`Account ${account.name} is inactive`);
-        }
-
-        if (account.systemRole === 'NET_INCOME') {
-          throw new BadRequestException(
-            'System account NET_INCOME is non-operable for manual journal entries',
-          );
-        }
+        assertAccountOperableForManualEntry(account);
 
         const rateAtDate = Number(currency?.rateToBase ?? 1.0);
         const amountBase = Number((entry.amount * rateAtDate).toFixed(4));

@@ -107,6 +107,8 @@ export class GetAccountsSummaryUseCase {
           status: acc.status,
           isCashOrBank: acc.isCashOrBank,
           systemRole: acc.systemRole || null,
+          isControlAccount: Boolean(acc.isControlAccount),
+          controlType: acc.controlType || null,
           balance,
         };
       });

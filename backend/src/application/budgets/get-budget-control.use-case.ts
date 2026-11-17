@@ -86,14 +86,23 @@ export class GetBudgetControlUseCase {
         return committedByAccountDir.get(key) || 0;
       };
 
-      // Fetch all active accounts of user (excluding cash/bank liquid accounts)
-      const accounts = await manager
+      // Fetch all active accounts of user (excluding cash/bank, control, equity, and capital system accounts)
+      const rawAccounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .where('account.user_id = :userId', { userId })
         .andWhere('account.status = :status', { status: 'ACTIVE' })
         .andWhere('account.is_cash_or_bank = :isCash', { isCash: false })
+        .andWhere('account.is_control_account = :isControl', { isControl: false })
+        .andWhere('account.type != :equityType', { equityType: 'EQUITY' })
+        .andWhere('(account.system_role IS NULL OR account.system_role != :capitalRole)', {
+          capitalRole: 'CAPITAL',
+        })
         .orderBy('account.name', 'ASC')
         .getMany();
+
+      const accounts = rawAccounts.filter(
+        (acc) => acc.type !== 'EQUITY' && !acc.isControlAccount && acc.systemRole !== 'CAPITAL',
+      );
 
       const accountMap = new Map<string, AccountEntity>();
       for (const acc of accounts) {
@@ -289,7 +298,7 @@ export class GetBudgetControlUseCase {
       const debtItems: BudgetControlItem[] = [];
       const debtBudgets = budgetItems.filter((b) => {
         const acc = accountMap.get(b.accountId);
-        return acc?.type === 'LIABILITY' || acc?.type === 'EQUITY';
+        return acc?.type === 'LIABILITY';
       });
 
       for (const b of debtBudgets) {

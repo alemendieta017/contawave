@@ -16,6 +16,7 @@ jest.mock('lucide-react', () => ({
   Plus: () => <span data-testid="plus-icon">+</span>,
   X: () => <span data-testid="x-icon">X</span>,
   Check: () => <span data-testid="check-icon">Check</span>,
+  Lock: () => <span data-testid="lock-icon">Lock</span>,
 }));
 
 describe('AccountPickerSheet Component', () => {
@@ -407,6 +408,62 @@ describe('AccountPickerSheet Component', () => {
       fireEvent.click(screen.getByRole('combobox'));
 
       expect(screen.queryByText('Resultado del Ejercicio')).not.toBeInTheDocument();
+    });
+
+    test('renders control accounts as locked/disabled with tooltip pointing to their parent module', () => {
+      const onSelect = jest.fn();
+      const accountsWithControl = [
+        ...mockAccounts,
+        {
+          id: 'acc-ar',
+          name: 'Cuentas por Cobrar',
+          type: 'ASSET' as const,
+          systemRole: 'ACCOUNTS_RECEIVABLE',
+          isControlAccount: true,
+          controlType: 'RECEIVABLE',
+          status: 'ACTIVE' as const,
+          balance: 0,
+        },
+        {
+          id: 'acc-ap',
+          name: 'Cuentas por Pagar',
+          type: 'LIABILITY' as const,
+          systemRole: 'ACCOUNTS_PAYABLE',
+          isControlAccount: true,
+          controlType: 'PAYABLE',
+          status: 'ACTIVE' as const,
+          balance: 0,
+        },
+        {
+          id: 'acc-loan-ctrl',
+          name: 'Préstamo Banco Control',
+          type: 'LIABILITY' as const,
+          isControlAccount: true,
+          controlType: 'LOAN',
+          status: 'ACTIVE' as const,
+          balance: 0,
+        },
+      ];
+
+      render(
+        <AccountPickerSheet {...defaultProps} accounts={accountsWithControl} onSelect={onSelect} />,
+      );
+      fireEvent.click(screen.getByRole('combobox'));
+
+      const arOpt = screen.getByTestId('account-option-acc-ar');
+      const apOpt = screen.getByTestId('account-option-acc-ap');
+      const loanOpt = screen.getByTestId('account-option-acc-loan-ctrl');
+
+      expect(arOpt).toBeDisabled();
+      expect(arOpt).toHaveAttribute('title', 'Gestionada desde el módulo Pagos y Cobros');
+      expect(apOpt).toBeDisabled();
+      expect(apOpt).toHaveAttribute('title', 'Gestionada desde el módulo Pagos y Cobros');
+      expect(loanOpt).toBeDisabled();
+      expect(loanOpt).toHaveAttribute('title', 'Gestionada desde el módulo Préstamos');
+
+      fireEvent.click(arOpt);
+      fireEvent.click(loanOpt);
+      expect(onSelect).not.toHaveBeenCalled();
     });
 
     test('excludes inactive accounts unless selectedAccountId matches', () => {

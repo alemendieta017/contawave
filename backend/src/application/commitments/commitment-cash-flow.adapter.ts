@@ -20,6 +20,7 @@ export class CommitmentCashFlowAdapter implements CashFlowCommitmentSource {
     const installments = await this.installmentRepository
       .createQueryBuilder('inst')
       .innerJoinAndSelect('inst.commitment', 'commitment')
+      .leftJoinAndSelect('commitment.initialTransaction', 'initialTx')
       .leftJoinAndSelect('commitment.contact', 'contact')
       .leftJoinAndSelect('inst.settlements', 'settlements')
       .leftJoinAndSelect('settlements.transaction', 'settlementTx')
@@ -33,6 +34,9 @@ export class CommitmentCashFlowAdapter implements CashFlowCommitmentSource {
     const items: ScheduledCashFlowItem[] = [];
 
     for (const inst of installments) {
+      if (inst.commitment?.initialTransaction?.status === 'REVERSED') {
+        continue;
+      }
       const derived = calculateInstallmentDerived(inst);
       if (derived.pendingAmount <= 0 || !inst.dueDate) {
         continue;

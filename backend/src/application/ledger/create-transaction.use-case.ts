@@ -8,6 +8,7 @@ import { CurrencyEntity } from '../../infrastructure/database/entities/currency.
 import { Transaction, JournalEntry } from '../../domain/ledger/ledger.model';
 import { BalanceUpdateService } from '../periods/balance-update.service';
 import { EnsurePeriodService } from '../periods/ensure-period.service';
+import { assertAccountOperableForManualEntry } from './transaction-guards';
 
 export interface CreateTransactionDto {
   accountingDate: string;
@@ -62,15 +63,7 @@ export class CreateTransactionUseCase {
           where: { id: account.currencyId },
         });
 
-        if (account.status === 'INACTIVE') {
-          throw new BadRequestException(`Account ${account.name} is inactive`);
-        }
-
-        if (account.systemRole === 'NET_INCOME') {
-          throw new BadRequestException(
-            'System account NET_INCOME is non-operable for manual journal entries',
-          );
-        }
+        assertAccountOperableForManualEntry(account);
 
         const rateAtDate = Number(currency?.rateToBase ?? 1.0);
         const amountBase = Number((entry.amount * rateAtDate).toFixed(4));

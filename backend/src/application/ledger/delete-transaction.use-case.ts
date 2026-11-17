@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
 import { BalanceUpdateService } from '../periods/balance-update.service';
+import { assertTransactionMutationAllowed } from './transaction-guards';
 
 @Injectable()
 export class DeleteTransactionUseCase {
@@ -23,6 +24,8 @@ export class DeleteTransactionUseCase {
       if (!transaction) {
         throw new NotFoundException(`Transaction with ID ${transactionId} not found`);
       }
+
+      await assertTransactionMutationAllowed(entityManager, transaction, 'delete');
 
       // 1. Call balance-update.service to subtract debits/credits
       const txDate = transaction.accountingDate;

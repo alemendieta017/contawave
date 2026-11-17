@@ -7,7 +7,12 @@ import { AccountEntity } from '../../entities/account.entity';
 import { BudgetEntity } from '../../entities/budget.entity';
 import { BudgetItemEntity } from '../../entities/budget-item.entity';
 import { BalanceUpdateService } from '../../../../application/periods/balance-update.service';
-import { CashFlowDirection, FlowIntention, SystemRole } from '@sistema-contable/shared';
+import {
+  CashFlowDirection,
+  ControlAccountType,
+  FlowIntention,
+  SystemRole,
+} from '@sistema-contable/shared';
 
 export async function defaultScenario(
   em: EntityManager,
@@ -22,11 +27,25 @@ export async function defaultScenario(
     type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
     systemRole?: SystemRole;
     isCashOrBank?: boolean;
+    isControlAccount?: boolean;
+    controlType?: ControlAccountType;
   }> = [
     // Cuenta única del sistema para patrimonio y saldos iniciales
     { name: 'Capital', type: 'EQUITY', systemRole: 'CAPITAL' },
-    { name: 'Cuentas por Cobrar', type: 'ASSET', systemRole: 'ACCOUNTS_RECEIVABLE' },
-    { name: 'Cuentas por Pagar', type: 'LIABILITY', systemRole: 'ACCOUNTS_PAYABLE' },
+    {
+      name: 'Cuentas por Cobrar',
+      type: 'ASSET',
+      systemRole: 'ACCOUNTS_RECEIVABLE',
+      isControlAccount: true,
+      controlType: 'RECEIVABLE',
+    },
+    {
+      name: 'Cuentas por Pagar',
+      type: 'LIABILITY',
+      systemRole: 'ACCOUNTS_PAYABLE',
+      isControlAccount: true,
+      controlType: 'PAYABLE',
+    },
     {
       name: 'Intereses y Cargos Financieros',
       type: 'EXPENSE',
@@ -67,12 +86,22 @@ export async function defaultScenario(
         status: 'ACTIVE',
         isCashOrBank: acc.isCashOrBank ?? false,
         systemRole: acc.systemRole || null,
+        isControlAccount: !!acc.isControlAccount,
+        controlType: acc.controlType || null,
       });
       account = await em.save(AccountEntity, account);
     } else {
       let modified = false;
       if (acc.systemRole && account.systemRole !== acc.systemRole) {
         account.systemRole = acc.systemRole;
+        modified = true;
+      }
+      if (acc.isControlAccount !== undefined && account.isControlAccount !== acc.isControlAccount) {
+        account.isControlAccount = acc.isControlAccount;
+        modified = true;
+      }
+      if (acc.controlType !== undefined && account.controlType !== acc.controlType) {
+        account.controlType = acc.controlType;
         modified = true;
       }
       if (acc.isCashOrBank !== undefined && account.isCashOrBank !== acc.isCashOrBank) {

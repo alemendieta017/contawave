@@ -82,6 +82,8 @@ export class AuthService {
           status: 'ACTIVE',
           isCashOrBank: !!item.isCashOrBank,
           systemRole: item.systemRole || null,
+          isControlAccount: !!item.isControlAccount,
+          controlType: item.controlType || null,
           metadata: null,
           parentId: null,
         }),

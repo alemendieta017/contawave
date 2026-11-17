@@ -92,6 +92,18 @@ export const SystemRoleSchema = z.enum([
 ]);
 export type SystemRole = z.infer<typeof SystemRoleSchema>;
 
+export const ControlAccountTypeSchema = z.enum(['RECEIVABLE', 'PAYABLE', 'LOAN', 'CREDIT_CARD']);
+export type ControlAccountType = z.infer<typeof ControlAccountTypeSchema>;
+
+export const TransactionOriginModuleSchema = z.enum([
+  'MANUAL',
+  'COMMITMENT',
+  'LOAN',
+  'CREDIT_CARD',
+  'BALANCE_ADJUSTMENT',
+]);
+export type TransactionOriginModule = z.infer<typeof TransactionOriginModuleSchema>;
+
 export const AccountType = {
   ASSET: 'ASSET',
   LIABILITY: 'LIABILITY',
@@ -583,6 +595,8 @@ export interface StarterAccountDefinition {
   type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
   isCashOrBank?: boolean;
   systemRole?: SystemRole;
+  isControlAccount?: boolean;
+  controlType?: ControlAccountType;
 }
 
 export const DEFAULT_STARTER_ACCOUNTS: StarterAccountDefinition[] = [
@@ -593,12 +607,16 @@ export const DEFAULT_STARTER_ACCOUNTS: StarterAccountDefinition[] = [
     type: AccountType.ASSET,
     isCashOrBank: false,
     systemRole: 'ACCOUNTS_RECEIVABLE',
+    isControlAccount: true,
+    controlType: 'RECEIVABLE',
   },
   {
     name: 'Cuentas por Pagar',
     type: AccountType.LIABILITY,
     isCashOrBank: false,
     systemRole: 'ACCOUNTS_PAYABLE',
+    isControlAccount: true,
+    controlType: 'PAYABLE',
   },
   {
     name: 'Intereses y Cargos Financieros',

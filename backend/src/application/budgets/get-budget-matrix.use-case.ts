@@ -149,12 +149,17 @@ export class GetBudgetMatrixUseCase {
         status: p.status,
       }));
 
-      // 3. Fetch active accounts excluding cash/bank accounts
+      // 3. Fetch active accounts excluding cash/bank, control, equity, and capital system accounts
       const accountsQuery = manager
         .createQueryBuilder(AccountEntity, 'account')
         .where('account.user_id = :userId', { userId })
         .andWhere('account.status = :activeStatus', { activeStatus: 'ACTIVE' })
-        .andWhere('account.is_cash_or_bank = :isCash', { isCash: false });
+        .andWhere('account.is_cash_or_bank = :isCash', { isCash: false })
+        .andWhere('account.is_control_account = :isControl', { isControl: false })
+        .andWhere('account.type != :equityType', { equityType: 'EQUITY' })
+        .andWhere('(account.system_role IS NULL OR account.system_role != :capitalRole)', {
+          capitalRole: 'CAPITAL',
+        });
 
       if (categoryId) {
         if (categoryId === 'INGRESOS' || categoryId === 'INCOME') {
@@ -172,15 +177,16 @@ export class GetBudgetMatrixUseCase {
           categoryId === 'FINANCIAMIENTO_AHORRO' ||
           categoryId === 'LIABILITY'
         ) {
-          accountsQuery.andWhere('account.type IN (:...catTypes)', {
-            catTypes: ['LIABILITY', 'EQUITY'],
-          });
+          accountsQuery.andWhere('account.type = :catType', { catType: 'LIABILITY' });
         } else {
           accountsQuery.andWhere('account.type = :categoryId', { categoryId });
         }
       }
 
-      const accounts = await accountsQuery.orderBy('account.name', 'ASC').getMany();
+      const rawAccounts = await accountsQuery.orderBy('account.name', 'ASC').getMany();
+      const accounts = rawAccounts.filter(
+        (acc) => acc.type !== 'EQUITY' && !acc.isControlAccount && acc.systemRole !== 'CAPITAL',
+      );
 
       // 4. Fetch existing budgets for these periods
       let budgets: BudgetEntity[] = [];
@@ -443,9 +449,7 @@ export class GetBudgetMatrixUseCase {
       const ingresosRows = buildHierarchicalRowsForType((t) => t === 'INCOME');
       const egresosRows = buildHierarchicalRowsForType((t) => t === 'EXPENSE');
       const ahorroInversionesRows = buildHierarchicalRowsForType((t) => t === 'ASSET');
-      const deudasFinanciacionRows = buildHierarchicalRowsForType((t) =>
-        ['LIABILITY', 'EQUITY'].includes(t),
-      );
+      const deudasFinanciacionRows = buildHierarchicalRowsForType((t) => t === 'LIABILITY');
 
       rows.push(
         ...ingresosRows,

@@ -11,6 +11,7 @@ import { ContactEntity } from '../../infrastructure/database/entities/contact.en
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
 import { CommitmentEntity } from '../../infrastructure/database/entities/commitment.entity';
 import { CommitmentInstallmentEntity } from '../../infrastructure/database/entities/commitment-installment.entity';
+import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
 import {
   buildCommitmentTransactionDescription,
   getTodayIsoDate,
@@ -129,6 +130,7 @@ export class CreateCommitmentUseCase {
         debitAccountId,
         creditAccountId,
         amountBase: totalAmount,
+        originModule: 'COMMITMENT',
       });
 
       const commitment = em.create(CommitmentEntity, {
@@ -145,6 +147,13 @@ export class CreateCommitmentUseCase {
         initialTransactionId: transaction.id,
       });
       const savedCommitment = await em.save(CommitmentEntity, commitment);
+      if (typeof em.update === 'function') {
+        await em.update(
+          TransactionEntity,
+          { id: transaction.id },
+          { originEntityId: savedCommitment.id },
+        );
+      }
 
       const installmentEntities = parsed.installments.map((row, index) =>
         em.create(CommitmentInstallmentEntity, {

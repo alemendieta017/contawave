@@ -9,6 +9,7 @@ import {
 } from '@sistema-contable/shared';
 import { formatCurrency } from '../../lib/utils';
 import { BudgetAccountModal } from './BudgetAccountModal';
+import { CashFlowDirectionBadge } from './CashFlowDirectionBadge';
 import {
   ChevronDown,
   ChevronUp,
@@ -484,20 +485,11 @@ export const BudgetMobileView: React.FC<BudgetMobileViewProps> = ({
                                 {row.subRowLabel || row.accountName}
                               </span>
                               {config.isBalance && row.cashFlowDirection && (
-                                <span
-                                  className="inline-flex items-center shrink-0 select-none"
-                                  title={
-                                    row.cashFlowDirection === CashFlowDirection.EGRESO_EFECTIVO
-                                      ? 'Salida de efectivo'
-                                      : 'Entrada de efectivo'
-                                  }
-                                >
-                                  {row.cashFlowDirection === CashFlowDirection.EGRESO_EFECTIVO ? (
-                                    <TrendingDown className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
-                                  ) : (
-                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-                                  )}
-                                </span>
+                                <CashFlowDirectionBadge
+                                  direction={row.cashFlowDirection}
+                                  sectionKey={config.key}
+                                  accountType={row.accountType}
+                                />
                               )}
                             </div>
                             {row.subRowLabel && (
