@@ -1,0 +1,3997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ContaWave — Préstamos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* ==========================================================================
+       ContaWave Design Tokens (Synced with frontend/src/app/globals.css)
+       ========================================================================== */
+    :root {
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      --brand-deep: 267 51% 15%;
+      --brand-vivid: 262 83% 58%;
+      --brand-wave: 277 68% 65%;
+      --brand-card: 268 59% 96%;
+      --brand-teal: 160 84% 39%;
+      --brand-gradient-start: 269 68% 30%;
+      --brand-gradient-mid: 262 83% 58%;
+      --brand-gradient-end: 277 68% 65%;
+
+      --page-bg: #fbf9fe;
+      --background: 0 0% 100%;
+      --foreground: 267 51% 15%;
+      --card: 0 0% 100%;
+      --card-tint: 268 59% 96%;
+      --card-foreground: 267 51% 15%;
+      --primary: 267 51% 15%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 268 59% 96%;
+      --secondary-foreground: 267 51% 15%;
+      --muted: 268 30% 95%;
+      --muted-foreground: 267 15% 45%;
+      --accent: 268 59% 96%;
+      --accent-foreground: 262 83% 58%;
+      --destructive: 0 84.2% 60.2%;
+      --border: 268 25% 91%;
+      --input: 268 25% 91%;
+      --ring: 262 83% 58%;
+
+      --emerald-solid: 160 84% 39%;
+      --emerald-bg: 160 84% 39% / 0.12;
+      --emerald-text: 160 84% 26%;
+      --emerald-border: 160 55% 74%;
+      --amber-bg: 38 92% 50% / 0.12;
+      --amber-text: 32 95% 28%;
+      --amber-border: 38 75% 74%;
+      --rose-bg: 0 84% 60% / 0.10;
+      --rose-text: 0 72% 45%;
+      --rose-border: 0 65% 84%;
+
+      --radius-lg: 0.5rem;
+      --radius-xl: 0.75rem;
+      --radius-2xl: 1rem;
+      --radius-3xl: 1.25rem;
+      --sidebar-width: 16rem;
+    }
+
+    .dark {
+      --brand-gradient-start: 264 68% 44%;
+      --brand-gradient-mid: 262 83% 62%;
+      --brand-gradient-end: 277 75% 70%;
+
+      --page-bg: #120820;
+      --background: 267 55% 7%;
+      --foreground: 268 50% 97%;
+      --card: 267 45% 12%;
+      --card-tint: 267 45% 15%;
+      --card-foreground: 268 50% 97%;
+      --primary: 262 83% 65%;
+      --primary-foreground: 267 55% 7%;
+      --secondary: 267 40% 18%;
+      --secondary-foreground: 268 50% 97%;
+      --muted: 267 35% 18%;
+      --muted-foreground: 268 20% 68%;
+      --accent: 267 40% 18%;
+      --accent-foreground: 268 50% 97%;
+      --border: 267 35% 22%;
+      --input: 267 35% 22%;
+      --ring: 262 83% 65%;
+
+      --emerald-solid: 160 72% 46%;
+      --emerald-bg: 160 84% 39% / 0.18;
+      --emerald-text: 160 72% 65%;
+      --emerald-border: 160 50% 30%;
+      --amber-bg: 38 92% 50% / 0.15;
+      --amber-text: 42 96% 65%;
+      --amber-border: 38 50% 30%;
+      --rose-bg: 0 84% 60% / 0.16;
+      --rose-text: 0 86% 74%;
+      --rose-border: 0 50% 32%;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      border-color: hsl(var(--border));
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      background-color: var(--page-bg);
+      color: hsl(var(--foreground));
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    button, input, select {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px hsl(var(--ring));
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+
+    svg.icon {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    svg.icon-sm { width: 0.875rem; height: 0.875rem; }
+    svg.icon-lg { width: 1.25rem; height: 1.25rem; }
+
+    /* ==========================================================================
+       Prototype Switcher Bar
+       ========================================================================== */
+    .proto-bar {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      background: hsl(var(--card));
+      border-bottom: 1px solid hsl(var(--border));
+      padding: 0.5rem 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .proto-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .proto-label {
+      font-weight: 700;
+      color: hsl(var(--muted-foreground));
+      margin-right: 0.25rem;
+    }
+
+    .proto-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid hsl(var(--border));
+      background: hsl(var(--secondary));
+      color: hsl(var(--secondary-foreground));
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .proto-pill:hover { border-color: hsl(var(--ring)); }
+    .proto-pill.active {
+      background: hsl(var(--brand-vivid));
+      color: #ffffff;
+      border-color: transparent;
+    }
+
+    /* ==========================================================================
+       App Shell
+       ========================================================================== */
+    .app-shell {
+      display: flex;
+      min-height: calc(100vh - 45px);
+    }
+
+    .sidebar {
+      display: none;
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      background: hsl(var(--card));
+      border-right: 1px solid hsl(var(--border));
+      padding: 1.25rem;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    @media (min-width: 768px) {
+      .sidebar { display: flex; }
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.25rem 0.25rem 1.25rem;
+    }
+
+    .brand-mark {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.625rem;
+      background: hsl(var(--brand-card));
+      border: 1px solid hsl(var(--brand-wave) / 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .nav-section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: hsl(var(--muted-foreground));
+      padding: 0.875rem 0.75rem 0.25rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.625rem 0.75rem;
+      border-radius: var(--radius-lg);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-item:hover {
+      background: hsl(var(--accent));
+      color: hsl(var(--foreground));
+    }
+
+    .nav-item.active {
+      background: hsl(var(--secondary));
+      color: hsl(var(--accent-foreground));
+      font-weight: 600;
+    }
+
+    .main-area {
+      flex: 1;
+      min-width: 0;
+      padding: 1rem;
+      padding-bottom: 5rem;
+    }
+
+    @media (min-width: 640px) {
+      .main-area { padding: 1.75rem 2rem 3rem; }
+    }
+
+    .container-max {
+      max-width: 74rem;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ==========================================================================
+       Buttons & Inputs
+       ========================================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 2.75rem;
+      padding: 0 1rem;
+      border-radius: var(--radius-xl);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-sm {
+      min-height: 2.25rem;
+      padding: 0 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .btn-icon {
+      min-height: 2.5rem;
+      min-width: 2.5rem;
+      padding: 0;
+      border-radius: var(--radius-xl);
+    }
+
+    .btn-gradient {
+      background: linear-gradient(
+        135deg,
+        hsl(var(--brand-gradient-start)) 0%,
+        hsl(var(--brand-gradient-mid)) 52%,
+        hsl(var(--brand-gradient-end)) 100%
+      );
+      color: #ffffff;
+      box-shadow: 0 4px 14px -2px rgba(124, 58, 237, 0.24);
+    }
+
+    .btn-gradient:hover { opacity: 0.94; }
+
+    .btn-primary {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+    }
+
+    .btn-primary:hover { opacity: 0.92; }
+
+    .btn-secondary {
+      background: hsl(var(--card));
+      color: hsl(var(--foreground));
+      border-color: hsl(var(--border));
+    }
+
+    .btn-secondary:hover { background: hsl(var(--muted)); }
+
+    .btn-danger-outline {
+      background: hsl(var(--card));
+      color: hsl(var(--muted-foreground));
+      border-color: hsl(var(--border));
+    }
+
+    .btn-danger-outline:hover {
+      background: hsl(var(--rose-bg));
+      color: hsl(var(--rose-text));
+      border-color: hsl(var(--rose-border));
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .btn-ghost:hover {
+      background: hsl(var(--accent));
+      color: hsl(var(--foreground));
+    }
+
+    .input, .select {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      min-height: 2.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-xl);
+      border: 1px solid hsl(var(--input));
+      background: hsl(var(--card));
+      color: hsl(var(--foreground));
+      font-size: 0.875rem;
+    }
+
+    .input:disabled, .select:disabled {
+      background: hsl(var(--muted) / 0.6);
+      color: hsl(var(--muted-foreground));
+      cursor: not-allowed;
+    }
+
+    .input-search {
+      padding-left: 2.5rem;
+      background: hsl(var(--muted) / 0.5);
+      font-size: 0.8125rem;
+    }
+
+    .input-cell {
+      width: 100%;
+      min-width: 6rem;
+      min-height: 2.125rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid hsl(var(--input));
+      background: hsl(var(--card));
+      color: hsl(var(--foreground));
+      font-size: 0.8125rem;
+    }
+
+    .input-cell-date {
+      min-width: 8.25rem;
+    }
+
+    .input-cell:focus {
+      border-color: hsl(var(--ring));
+      box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+    }
+
+    /* ==========================================================================
+       Header & 4-Card KPI Grid
+       ========================================================================== */
+    .page-header {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .page-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 1.375rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    @media (min-width: 640px) {
+      .page-title { font-size: 1.625rem; }
+    }
+
+    .page-subtitle {
+      margin: 0.25rem 0 0;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .kpi-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 1024px) {
+      .kpi-grid-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+      }
+    }
+
+    .kpi-card {
+      border-radius: var(--radius-2xl);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 0.625rem;
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-card { padding: 1.25rem; }
+    }
+
+    .kpi-card.hero {
+      grid-column: span 2 / span 2;
+      background: linear-gradient(
+        135deg,
+        hsl(var(--brand-gradient-start)) 0%,
+        hsl(var(--brand-gradient-mid)) 52%,
+        hsl(var(--brand-gradient-end)) 100%
+      );
+      color: #ffffff;
+      border-color: transparent;
+      box-shadow: 0 10px 25px -4px rgba(124, 58, 237, 0.30);
+    }
+
+    @media (min-width: 1024px) {
+      .kpi-card.hero { grid-column: span 1 / span 1; }
+    }
+
+    .kpi-glow {
+      position: absolute;
+      right: -1.5rem;
+      bottom: -1.5rem;
+      width: 6rem;
+      height: 6rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.12);
+      filter: blur(18px);
+      pointer-events: none;
+    }
+
+    .kpi-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: hsl(var(--muted-foreground));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .kpi-card.hero .kpi-label { color: rgba(255, 255, 255, 0.9); }
+
+    .kpi-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-value { font-size: 1.5rem; }
+    }
+
+    .kpi-value-emerald {
+      color: hsl(var(--emerald-text));
+    }
+
+    .kpi-footer {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+      margin-top: 0.25rem;
+    }
+
+    .kpi-card.hero .kpi-footer { color: rgba(255, 255, 255, 0.88); }
+
+    /* ==========================================================================
+       Filter Toolbar & Cards
+       ========================================================================== */
+    .filter-toolbar {
+      padding: 1rem;
+      border-radius: var(--radius-3xl);
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 1024px) {
+      .toolbar-row {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .segmented {
+      display: inline-flex;
+      padding: 0.25rem;
+      background: hsl(var(--muted));
+      border-radius: var(--radius-2xl);
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .seg-btn {
+      padding: 0.5rem 0.875rem;
+      min-height: 2.375rem;
+      border-radius: var(--radius-xl);
+      border: none;
+      background: transparent;
+      color: hsl(var(--muted-foreground));
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      transition: all 0.15s ease;
+    }
+
+    .seg-btn.active {
+      background: hsl(var(--card));
+      color: hsl(var(--accent-foreground));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .seg-btn.active-brand {
+      background: hsl(var(--brand-vivid));
+      color: #ffffff;
+    }
+
+    .loan-card {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-left: 4px solid hsl(var(--brand-vivid));
+      border-radius: var(--radius-2xl);
+      overflow: hidden;
+    }
+
+    .loan-card-header {
+      padding: 1.125rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+
+    @media (min-width: 1024px) {
+      .loan-card-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .loan-card-preview {
+      border-top: 1px solid hsl(var(--border));
+      background: hsl(var(--card-tint) / 0.45);
+      padding: 0.875rem 1.25rem 1rem;
+    }
+
+    .card {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius-2xl);
+      padding: 1.25rem;
+    }
+
+    .card-tint {
+      background: hsl(var(--card-tint));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius-2xl);
+      padding: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.1875rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-neutral {
+      background: hsl(var(--muted));
+      color: hsl(var(--muted-foreground));
+    }
+
+    .badge-vivid {
+      background: hsl(var(--brand-vivid) / 0.12);
+      color: hsl(var(--brand-vivid));
+    }
+
+    .badge-emerald {
+      background: hsl(var(--emerald-bg));
+      color: hsl(var(--emerald-text));
+      border: 1px solid hsl(var(--emerald-border));
+    }
+
+    .badge-amber {
+      background: hsl(var(--amber-bg));
+      color: hsl(var(--amber-text));
+      border: 1px solid hsl(var(--amber-border));
+    }
+
+    .badge-rose {
+      background: hsl(var(--rose-bg));
+      color: hsl(var(--rose-text));
+      border: 1px solid hsl(var(--rose-border));
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 0.5rem;
+      border-radius: 9999px;
+      background: hsl(var(--muted));
+      overflow: hidden;
+    }
+
+    .progress-track-card {
+      max-width: 20rem;
+      height: 0.4375rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: hsl(var(--brand-vivid));
+      transition: width 0.25s ease;
+    }
+
+    .progress-fill-emerald {
+      background: hsl(var(--emerald-solid));
+    }
+
+    .chip-preset {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px dashed hsl(var(--brand-vivid) / 0.45);
+      background: hsl(var(--card));
+      color: hsl(var(--foreground));
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chip-preset:hover, .chip-preset.active {
+      background: hsl(var(--brand-vivid) / 0.12);
+      border-style: solid;
+      border-color: hsl(var(--brand-vivid));
+      color: hsl(var(--brand-vivid));
+    }
+
+    /* Impact Summary Banner (Live Before/After inside Edit Form) */
+    .impact-panel {
+      background: hsl(var(--card-tint));
+      border: 1px solid hsl(var(--brand-vivid) / 0.28);
+      border-radius: var(--radius-2xl);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+
+    .impact-metrics {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 640px) {
+      .impact-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 1024px) {
+      .impact-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    .impact-stat {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius-xl);
+      padding: 0.75rem 0.875rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    /* ==========================================================================
+       Tables
+       ========================================================================== */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius-xl);
+      background: hsl(var(--card));
+    }
+
+    .table-scroll-y {
+      max-height: 29rem;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    th {
+      background: hsl(var(--card-tint));
+      color: hsl(var(--muted-foreground));
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.625rem 0.75rem;
+      border-bottom: 1px solid hsl(var(--border));
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    td {
+      padding: 0.5rem 0.625rem;
+      border-bottom: 1px solid hsl(var(--border));
+      vertical-align: middle;
+    }
+
+    td.tabular-nums, td.text-right {
+      white-space: nowrap;
+    }
+
+    tfoot td {
+      background: hsl(var(--card-tint));
+      font-weight: 700;
+      border-top: 1px solid hsl(var(--border));
+      border-bottom: none;
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr.row-paid {
+      background: hsl(var(--muted) / 0.35);
+      color: hsl(var(--muted-foreground));
+    }
+
+    .text-left { text-align: left; }
+    .text-right { text-align: right; }
+
+    /* ==========================================================================
+       Grids, Mode Cards & Modals
+       ========================================================================== */
+    .grid-2 > *, .grid-3 > *, .grid-4 > * {
+      min-width: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.875rem;
+    }
+
+    @media (min-width: 640px) {
+      .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.875rem;
+    }
+
+    @media (min-width: 640px) {
+      .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.875rem;
+    }
+
+    @media (min-width: 640px) {
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 1024px) {
+      .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    .mode-card {
+      border: 2px solid hsl(var(--border));
+      border-radius: var(--radius-2xl);
+      padding: 1rem;
+      background: hsl(var(--card));
+      color: hsl(var(--foreground));
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .mode-card.selected {
+      border-color: hsl(var(--brand-vivid));
+      background: hsl(var(--card-tint));
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: hsl(var(--foreground));
+      margin-bottom: 0.375rem;
+    }
+
+    .field-hint {
+      margin: 0.3rem 0 0;
+      font-size: 0.72rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(18, 8, 32, 0.56);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    @media (min-width: 640px) {
+      .modal-backdrop {
+        align-items: center;
+        padding: 1rem;
+      }
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal-panel {
+      width: 100%;
+      max-width: 34rem;
+      max-height: 92vh;
+      overflow-y: auto;
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius-3xl) var(--radius-3xl) 0 0;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    @media (min-width: 640px) {
+      .modal-panel {
+        border-radius: var(--radius-3xl);
+        padding: 1.5rem;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+
+    .picker-trigger {
+      width: 100%;
+      min-height: 2.375rem;
+      padding: 0.45rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: hsl(var(--foreground));
+      background: hsl(var(--background));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .picker-trigger:hover {
+      border-color: hsl(var(--ring));
+    }
+
+    .picker-trigger:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px hsl(var(--ring) / 0.25);
+    }
+
+    .picker-trigger-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .picker-dot {
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 9999px;
+      flex-shrink: 0;
+    }
+
+    .picker-dot-asset { background: #10b981; }
+    .picker-dot-expense { background: #f43f5e; }
+    .picker-dot-income { background: #0ea5e9; }
+    .picker-dot-neutral { background: hsl(var(--muted-foreground)); }
+
+    .picker-list-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.625rem;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: var(--radius-lg);
+      background: transparent;
+      color: hsl(var(--foreground));
+      font-family: inherit;
+      font-size: 0.875rem;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+
+    .picker-list-item:hover {
+      background: hsl(var(--muted) / 0.7);
+    }
+
+    .picker-list-item.selected {
+      background: hsl(var(--muted));
+      border-color: hsl(var(--border));
+      font-weight: 600;
+    }
+
+    .col-cat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.25rem;
+      padding: 0.125rem 0.45rem;
+      border-radius: 9999px;
+      font-family: inherit;
+      font-size: 0.675rem;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: normal;
+      max-width: 10.5rem;
+      line-height: 1.3;
+    }
+
+    .col-cat-pill span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .col-cat-pill-editable {
+      border: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+      color: hsl(var(--foreground));
+      cursor: pointer;
+      transition: border-color 0.12s ease, background 0.12s ease;
+    }
+
+    .col-cat-pill-editable:hover {
+      border-color: hsl(var(--ring));
+      background: hsl(var(--muted) / 0.5);
+    }
+
+    .col-cat-pill-locked {
+      border: 1px solid hsl(var(--border) / 0.6);
+      background: hsl(var(--muted) / 0.65);
+      color: hsl(var(--muted-foreground));
+      cursor: default;
+    }
+
+    .col-remove-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.125rem;
+      height: 1.125rem;
+      border-radius: 9999px;
+      border: none;
+      background: transparent;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+      margin-left: 0.2rem;
+      vertical-align: middle;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    .col-remove-btn:hover {
+      background: hsl(var(--muted));
+      color: hsl(var(--foreground));
+    }
+
+    .skeleton {
+      background: hsl(var(--muted));
+      border-radius: var(--radius-2xl);
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .mobile-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: hsl(var(--card));
+      border-top: 1px solid hsl(var(--border));
+      display: flex;
+      justify-content: space-around;
+      padding: 0.375rem 0.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .mobile-nav { display: none; }
+    }
+
+    .mobile-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.375rem 0.5rem;
+      border: none;
+      background: transparent;
+      color: hsl(var(--muted-foreground));
+      font-size: 0.6875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .mobile-nav-btn.active { color: hsl(var(--brand-vivid)); }
+
+    .hidden { display: none !important; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+    .flex-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .text-muted { color: hsl(var(--muted-foreground)); }
+    .text-emerald { color: hsl(var(--emerald-text)); }
+    .text-rose { color: hsl(var(--rose-text)); }
+    .text-xs { font-size: 0.75rem; }
+    .text-sm { font-size: 0.875rem; }
+    .font-bold { font-weight: 700; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+  </style>
+</head>
+<body>
+  <!-- Prototype Switcher -->
+  <div class="proto-bar" role="region" aria-label="Navegación de prototipo">
+    <div class="proto-group">
+      <span class="proto-label">Pantallas:</span>
+      <button class="proto-pill active" data-view-btn="list" onclick="switchView('list')">Préstamos</button>
+      <button class="proto-pill" data-view-btn="wizard" onclick="switchView('wizard')">Nuevo Préstamo</button>
+      <button class="proto-pill" data-view-btn="detail" onclick="switchView('detail')">Detalle de Préstamo</button>
+      <button class="proto-pill" data-view-btn="edit" onclick="switchView('edit')">Editar Préstamo</button>
+    </div>
+    <div class="proto-group">
+      <span class="proto-label">Estados:</span>
+      <button class="proto-pill" onclick="toggleListState('normal')">Normal</button>
+      <button class="proto-pill" onclick="toggleListState('empty')">Vacío</button>
+      <button class="proto-pill" onclick="toggleListState('skeleton')">Cargando</button>
+      <button class="proto-pill" id="themeToggleBtn" onclick="toggleTheme()">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <span>Dark</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div>
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M18.5 7.5C16.8 5.6 14.3 4.5 11.5 4.5C6.8 4.5 3 8.1 3 12.5C3 16.9 6.8 20.5 11.5 20.5C14.6 20.5 17.3 18.9 18.8 16.6" stroke="#231238" stroke-width="2.8" stroke-linecap="round"/>
+              <path d="M7.5 12.5C9.2 10.6 11.5 10.6 13.2 12.5C14.9 14.4 17.2 14.4 19.5 12.5" stroke="#7C3AED" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="brand-name">ContaWave</span>
+        </div>
+
+        <nav class="nav-list">
+          <span class="nav-section-title">Día a día</span>
+          <button class="nav-item" onclick="switchView('list')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+            <span>Transacciones</span>
+          </button>
+          <button class="nav-item" onclick="switchView('list')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg>
+            <span>Pagos y Cobros</span>
+          </button>
+          <button class="nav-item active" onclick="switchView('list')">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+            <span>Préstamos</span>
+          </button>
+
+          <span class="nav-section-title">Planificación</span>
+          <button class="nav-item" onclick="switchView('list')">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span>Flujo Proyectado</span>
+          </button>
+          <button class="nav-item" onclick="switchView('list')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9"/><path d="M21 3v6h-6"/></svg>
+            <span>Presupuestos</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="text-xs text-muted" style="padding: 0.5rem;">
+        Tus cuotas pendientes se reflejan automáticamente en tu Flujo Proyectado.
+      </div>
+    </aside>
+
+    <!-- Main Area -->
+    <main class="main-area">
+      <div class="container-max">
+
+        <!-- ================================================================
+             VIEW 1: CARTERA DE PRÉSTAMOS
+             ================================================================ -->
+        <section id="view-list" style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <header class="page-header">
+            <div>
+              <h1 class="page-title">Préstamos</h1>
+              <p class="page-subtitle">Controla tus créditos bancarios, sus cuotas y cargos reales desde un solo lugar.</p>
+            </div>
+            <div>
+              <button class="btn btn-gradient" onclick="switchView('wizard')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                <span>Nuevo Préstamo</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- Skeleton State -->
+          <div id="list-skeleton" class="hidden" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="kpi-grid-4">
+              <div class="skeleton" style="height: 7rem;"></div>
+              <div class="skeleton" style="height: 7rem;"></div>
+              <div class="skeleton" style="height: 7rem;"></div>
+              <div class="skeleton" style="height: 7rem;"></div>
+            </div>
+            <div class="skeleton" style="height: 11rem;"></div>
+            <div class="skeleton" style="height: 11rem;"></div>
+          </div>
+
+          <!-- Empty State -->
+          <div id="list-empty" class="card hidden" style="text-align: center; padding: 3rem 1.5rem;">
+            <div style="width: 3rem; height: 3rem; margin: 0 auto 0.875rem; border-radius: 1rem; background: hsl(var(--secondary)); display: flex; align-items: center; justify-content: center; color: hsl(var(--brand-vivid));">
+              <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+            </div>
+            <h2 style="margin: 0; font-size: 1rem; font-weight: 700;">Todavía no tenés préstamos cargados</h2>
+            <p class="text-xs text-muted" style="max-width: 26rem; margin: 0.5rem auto 1.25rem;">
+              Registrá un préstamo nuevo o uno que ya venías pagando. Podés sumar cargos de tu banco y ajustar el plan cuando cambie.
+            </p>
+            <button class="btn btn-gradient" onclick="switchView('wizard')">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              <span>Nuevo Préstamo</span>
+            </button>
+          </div>
+
+          <!-- Normal State -->
+          <div id="list-normal" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <!-- 4 KPI Cards -->
+            <div class="kpi-grid-4">
+              <div class="kpi-card hero">
+                <div class="kpi-glow" aria-hidden="true"></div>
+                <div class="kpi-label">
+                  <span>Capital Pendiente</span>
+                  <div style="padding: 0.375rem; border-radius: 0.5rem; background: rgba(255,255,255,0.2);">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                  </div>
+                </div>
+                <div>
+                  <div class="kpi-value tabular-nums" id="list-kpi-cap">₲ 44.650.000</div>
+                  <div class="kpi-footer">Total por amortizar</div>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-label">
+                  <span>Próxima Cuota</span>
+                  <span class="badge badge-amber" id="list-kpi-next-badge">15 Nov</span>
+                </div>
+                <div>
+                  <div class="kpi-value tabular-nums" id="list-kpi-next-val">₲ 2.855.000</div>
+                  <div class="kpi-footer" id="list-kpi-next-sub">Préstamo Auto Itaú · #13</div>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-label">
+                  <span>Carga Mensual</span>
+                </div>
+                <div>
+                  <div class="kpi-value tabular-nums" id="list-kpi-monthly">₲ 4.105.000</div>
+                  <div class="kpi-footer">Capital + intereses y cargos</div>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-label">
+                  <span>Créditos Activos</span>
+                  <span class="badge badge-vivid tabular-nums">2 créditos</span>
+                </div>
+                <div>
+                  <div class="kpi-value tabular-nums" id="list-kpi-counts">21 cuotas</div>
+                  <div class="kpi-footer" id="list-kpi-counts-sub">Pendientes de pago (15 pagadas)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Toolbar -->
+            <div class="filter-toolbar">
+              <div class="toolbar-row">
+                <div class="segmented" role="tablist">
+                  <button class="seg-btn active" id="filter-btn-ALL" onclick="filterLoans('ALL', this)">Todos (2)</button>
+                  <button class="seg-btn" id="filter-btn-ACTIVE" onclick="filterLoans('ACTIVE', this)">Activos (2)</button>
+                  <button class="seg-btn" id="filter-btn-SETTLED" onclick="filterLoans('SETTLED', this)">Saldados (0)</button>
+                </div>
+
+                <div class="flex-row" style="flex: 1; justify-content: flex-end;">
+                  <div style="position: relative; flex: 1; max-width: 18rem; min-width: 12rem;">
+                    <svg class="icon text-muted" style="position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input
+                      type="search"
+                      class="input input-search"
+                      placeholder="Buscar préstamo..."
+                      aria-label="Buscar préstamo"
+                      oninput="searchLoans(this.value)"
+                    />
+                  </div>
+
+                  <div class="segmented">
+                    <button class="seg-btn active-brand" id="mode-btn-cards" onclick="setListDisplay('CARDS')">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                      <span>Por Préstamo</span>
+                    </button>
+                    <button class="seg-btn" id="mode-btn-agenda" onclick="setListDisplay('AGENDA')">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+                      <span>Agenda de Cuotas</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- View Mode A: Por Préstamo -->
+            <div id="display-cards" style="display: flex; flex-direction: column; gap: 1rem;">
+              <!-- Loan 1 (Rendered dynamically from primaryLoan state) -->
+              <article class="loan-card" id="loan1-card" data-status="ACTIVE" data-name="préstamo auto itaú banco itaú"></article>
+
+              <!-- Loan 2 (Static sibling loan with ONLY Capital + Interés + Total) -->
+              <article class="loan-card" id="loan2-card" data-status="ACTIVE" data-name="crédito capital operativo">
+                <div class="loan-card-header">
+                  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.45rem;">
+                    <div class="flex-row">
+                      <span class="badge badge-emerald">Al día</span>
+                      <span class="badge badge-neutral">PYG</span>
+                      <span class="text-xs text-muted">Tasa 15,0%</span>
+                    </div>
+
+                    <div class="flex-row" style="gap: 0.625rem;">
+                      <button onclick="switchView('detail')" style="border:none;background:transparent;padding:0;font-size:1.0625rem;font-weight:700;color:hsl(var(--foreground));cursor:pointer;text-align:left;">
+                        Crédito Capital Operativo
+                      </button>
+                    </div>
+
+                    <div class="flex-row" style="gap: 0.75rem;">
+                      <div class="progress-track progress-track-card" style="flex: 1;">
+                        <div class="progress-fill progress-fill-emerald" style="width: 25%;"></div>
+                      </div>
+                      <span class="text-xs font-semibold text-muted tabular-nums">3 pagadas · 9 pendientes</span>
+                    </div>
+                  </div>
+
+                  <div class="flex-row" style="justify-content: space-between; gap: 1.25rem;">
+                    <div style="text-align: right;">
+                      <div class="text-xs text-muted">Capital pendiente</div>
+                      <div class="font-bold tabular-nums" style="font-size: 1.125rem;">₲ 12.500.000</div>
+                      <div class="text-xs text-muted tabular-nums">de ₲ 16.000.000</div>
+                    </div>
+
+                    <div class="flex-row" style="gap: 0.5rem;">
+                      <button class="btn btn-secondary" onclick="switchView('detail')">Ver detalle</button>
+                      <button class="btn btn-gradient" onclick="openPayModal({ source: 'loan2', num: 4, title: 'Crédito Capital Operativo', cap: 1095000, charges: [{ id: 'interest', name: 'Interés', val: 155000 }] })">
+                        <svg class="icon" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                        <span>Pagar #4</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="loan-card-preview">
+                  <div class="flex-between" style="margin-bottom: 0.5rem;">
+                    <span class="text-xs font-bold text-muted">Próximas cuotas</span>
+                    <button class="btn btn-ghost btn-sm" onclick="switchView('detail')" style="padding-right: 0;">Ver las 12 cuotas →</button>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th class="text-left">Cuota</th>
+                          <th class="text-left">Vencimiento</th>
+                          <th class="text-right">Capital</th>
+                          <th class="text-right">Interés</th>
+                          <th class="text-right">Total cuota</th>
+                          <th class="text-right"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="text-left font-semibold tabular-nums">#4</td>
+                          <td class="text-left tabular-nums">20/11/2026</td>
+                          <td class="text-right tabular-nums">₲ 1.095.000</td>
+                          <td class="text-right tabular-nums">₲ 155.000</td>
+                          <td class="text-right font-bold tabular-nums">₲ 1.250.000</td>
+                          <td class="text-right"><button class="btn btn-primary btn-sm" onclick="openPayModal({ source: 'loan2', num: 4, title: 'Crédito Capital Operativo', cap: 1095000, charges: [{ id: 'interest', name: 'Interés', val: 155000 }] })">Pagar</button></td>
+                        </tr>
+                        <tr>
+                          <td class="text-left font-semibold tabular-nums">#5</td>
+                          <td class="text-left tabular-nums">20/12/2026</td>
+                          <td class="text-right tabular-nums">₲ 1.110.000</td>
+                          <td class="text-right tabular-nums">₲ 140.000</td>
+                          <td class="text-right font-bold tabular-nums">₲ 1.250.000</td>
+                          <td class="text-right"><button class="btn btn-secondary btn-sm" onclick="openPayModal({ source: 'loan2', num: 5, title: 'Crédito Capital Operativo', cap: 1110000, charges: [{ id: 'interest', name: 'Interés', val: 140000 }] })">Pagar</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- View Mode B: Agenda de Cuotas -->
+            <div id="display-agenda" class="hidden">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="text-left">Vencimiento</th>
+                      <th class="text-left">Préstamo</th>
+                      <th class="text-left">Cuota</th>
+                      <th class="text-right">Capital</th>
+                      <th class="text-right">Interés</th>
+                      <th class="text-right">Otros cargos</th>
+                      <th class="text-right">Total cuota</th>
+                      <th class="text-right"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="agenda-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 2: WIZARD NUEVO PRÉSTAMO
+             ================================================================ -->
+        <section id="view-wizard" class="hidden" style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <header class="page-header">
+            <div>
+              <button class="btn btn-ghost btn-sm" onclick="switchView('list')" style="padding-left: 0; margin-bottom: 0.25rem;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Volver a Préstamos</span>
+              </button>
+              <h1 class="page-title">Nuevo Préstamo</h1>
+              <p class="page-subtitle">Armamos un borrador con Capital e Interés. Podés sumar columnas opcionales y editar todas las cuotas.</p>
+            </div>
+          </header>
+
+          <!-- Step 1 -->
+          <div class="card">
+            <h2 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 700;">1. Datos del préstamo</h2>
+
+            <div class="grid-2" style="margin-bottom: 1rem;">
+              <div>
+                <label class="field-label" for="wiz-name">Nombre del préstamo *</label>
+                <input id="wiz-name" class="input" type="text" value="Préstamo Auto Itaú" oninput="updateWizLiabilityPreview()" />
+                <p class="field-hint" id="wiz-liability-hint">Se creará la cuenta de Pasivo «Préstamo Auto Itaú» (Control · Préstamos).</p>
+              </div>
+              <div>
+                <label class="field-label" for="wiz-currency">Moneda *</label>
+                <select id="wiz-currency" class="select" onchange="onWizCurrencyChange()">
+                  <option value="PYG" selected>PYG (₲) — Guaraní</option>
+                  <option value="USD">USD ($) — Dólar estadounidense</option>
+                </select>
+                <p class="field-hint">La cuenta de Pasivo heredará esta moneda.</p>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-bottom: 1.25rem;">
+              <div>
+                <label class="field-label" for="wiz-principal" id="wiz-principal-label">Monto del préstamo (₲)</label>
+                <input id="wiz-principal" class="input tabular-nums text-right font-bold" inputmode="numeric" value="60.000.000" oninput="formatThousandInput(this); recalcWizardGrid()" />
+              </div>
+              <div>
+                <label class="field-label" for="wiz-rate">Tasa (%)</label>
+                <input id="wiz-rate" class="input tabular-nums text-right" inputmode="decimal" value="13.5" oninput="recalcWizardGrid()" />
+              </div>
+              <div>
+                <label class="field-label" for="wiz-term">Cuotas y 1er vencimiento</label>
+                <div style="display: flex; gap: 0.5rem; min-width: 0;">
+                  <input id="wiz-term" class="input tabular-nums text-right" style="width: 4.5rem; flex: none;" inputmode="numeric" value="24" oninput="syncWizStartSelect(); recalcWizardGrid()" />
+                  <input id="wiz-date" class="input tabular-nums" style="flex: 1; min-width: 0;" type="date" value="2025-11-15" oninput="recalcWizardGrid()" />
+                </div>
+              </div>
+            </div>
+
+            <div class="field-label">¿Es un préstamo nuevo o ya lo venías pagando?</div>
+            <div class="grid-2">
+              <button type="button" class="mode-card" id="mode-new" onclick="setWizardMode('NEW')">
+                <span class="font-bold text-sm">Es un préstamo nuevo</span>
+                <span class="text-xs text-muted">El dinero ingresa a tu cuenta bancaria en la fecha de desembolso.</span>
+              </button>
+
+              <button type="button" class="mode-card selected" id="mode-ongoing" onclick="setWizardMode('ONGOING')">
+                <span class="font-bold text-sm">Ya lo venía pagando</span>
+                <span class="text-xs text-muted">Empezás desde tu próxima cuota sin alterar tus saldos bancarios de hoy.</span>
+              </button>
+            </div>
+
+            <div id="wiz-new-panel" class="card-tint hidden" style="margin-top: 1rem;">
+              <div class="grid-2">
+                <div>
+                  <label class="field-label" for="wiz-bank-acc-btn">Cuenta bancaria donde recibiste el dinero *</label>
+                  <input type="hidden" id="wiz-bank-acc" value="Itaú Cuenta Corriente" />
+                  <button type="button" id="wiz-bank-acc-btn" class="picker-trigger" onclick="openAccountPicker({ targetId: 'wiz-bank-acc', mode: 'PAYMENT_ACCOUNTS', title: 'Cuenta donde recibiste el dinero' })">
+                    <span class="picker-trigger-label"><span class="picker-dot picker-dot-asset"></span><span>Itaú Cuenta Corriente</span></span>
+                    <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+                <div>
+                  <label class="field-label" for="wiz-opening-date-new">Fecha del desembolso *</label>
+                  <input id="wiz-opening-date-new" class="input tabular-nums" type="date" value="2026-11-18" />
+                </div>
+              </div>
+              <p class="field-hint">
+                Asentará el ingreso en esa cuenta bancaria en la fecha indicada y registrará el Pasivo en tu Balance.
+              </p>
+            </div>
+
+            <div id="wiz-ongoing-panel" class="card-tint" style="margin-top: 1rem;">
+              <div class="grid-3">
+                <div>
+                  <label class="field-label" for="wiz-start-inst">¿Desde qué cuota vas a registrar?</label>
+                  <select id="wiz-start-inst" class="select" onchange="recalcWizardGrid()"></select>
+                </div>
+                <div>
+                  <label class="field-label" for="wiz-opening-date-ongoing">Fecha de apertura en Balance *</label>
+                  <input id="wiz-opening-date-ongoing" class="input tabular-nums" type="date" value="2026-11-18" />
+                </div>
+                <div>
+                  <label class="field-label" for="wiz-ongoing-acc-btn">Cuenta bancaria habitual (opcional)</label>
+                  <input type="hidden" id="wiz-ongoing-acc" value="Itaú Cuenta Corriente" />
+                  <button type="button" id="wiz-ongoing-acc-btn" class="picker-trigger" onclick="openAccountPicker({ targetId: 'wiz-ongoing-acc', mode: 'PAYMENT_ACCOUNTS', allowEmpty: true, emptyLabel: 'Elegir al momento de pagar', title: 'Cuenta bancaria habitual' })">
+                    <span class="picker-trigger-label"><span class="picker-dot picker-dot-asset"></span><span>Itaú Cuenta Corriente</span></span>
+                    <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+              </div>
+              <p class="field-hint">
+                Tu deuda pendiente se sumará al Balance contra Capital en la fecha de apertura, sin alterar el saldo actual de tu banco.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 2: 100% Visible & Editable Grid -->
+          <div class="card">
+            <div class="flex-between" style="margin-bottom: 0.75rem;">
+              <div>
+                <h2 style="margin: 0; font-size: 1rem; font-weight: 700;">
+                  2. Plan de pagos <span id="wiz-range-label" class="text-muted font-medium">(Cuotas 13 a 24)</span>
+                </h2>
+                <p class="text-xs text-muted" style="margin: 0.125rem 0 0;">
+                  Todas las cuotas son editables. Por defecto incluye Capital e Interés.
+                </p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="toggleAddColForm('wiz')">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                <span>Agregar columna de cargo</span>
+              </button>
+            </div>
+
+            <!-- Discreet Smart Column Helper Drawer (Wizard) -->
+            <div id="wiz-add-col-form" class="card-tint hidden" style="margin-bottom: 1rem;">
+              <div class="flex-between" style="margin-bottom: 0.625rem;">
+                <span class="text-xs font-bold">Agregar columna al plan</span>
+                <button class="btn btn-ghost btn-sm" onclick="toggleAddColForm('wiz')">Cerrar</button>
+              </div>
+
+              <div class="flex-row" style="margin-bottom: 0.875rem;">
+                <span class="text-xs text-muted">Atajos sugeridos:</span>
+                <button type="button" class="chip-preset" onclick="applyColPreset('wiz', 'Seguro de Vida', 'PCT_CAPITAL', '0.12')">Seguro de vida (% s/ capital)</button>
+                <button type="button" class="chip-preset" onclick="applyColPreset('wiz', 'IVA s/ Interés', 'PCT_COL', '10', 'interest')">IVA 10% s/ interés</button>
+                <button type="button" class="chip-preset" onclick="applyColPreset('wiz', 'Gastos Adm.', 'FIXED', '25000')">Gasto fijo mensual</button>
+                <button type="button" class="chip-preset" onclick="applyColPreset('wiz', 'Otro cargo', 'ZERO', '0')">En blanco (a mano)</button>
+              </div>
+
+              <div class="grid-3" style="margin-bottom: 0.75rem;">
+                <div>
+                  <label class="field-label" for="wiz-new-col-name">Nombre de la columna</label>
+                  <input id="wiz-new-col-name" class="input" type="text" placeholder="Ej. Seguro, IVA s/ Seguro, etc." value="Seguro de Vida" />
+                </div>
+                <div>
+                  <label class="field-label" for="wiz-new-col-exp-btn">Categoría de gasto *</label>
+                  <input type="hidden" id="wiz-new-col-exp" value="exp_seg" />
+                  <button type="button" id="wiz-new-col-exp-btn" class="picker-trigger" onclick="openAccountPicker({ targetId: 'wiz-new-col-exp', mode: 'EXPENSES', title: 'Seleccionar categoría de gasto' })">
+                    <span class="picker-trigger-label"><span class="picker-dot picker-dot-expense"></span><span>Seguros</span></span>
+                    <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+                <div>
+                  <label class="field-label" for="wiz-new-col-mode">Cómo autorellenar</label>
+                  <select id="wiz-new-col-mode" class="select" onchange="updateColRuleUI('wiz')">
+                    <option value="ZERO">En blanco (₲ 0 para editar a mano)</option>
+                    <option value="FIXED" selected>Monto fijo en todas (₲)</option>
+                    <option value="PCT_CAPITAL">% sobre capital pendiente</option>
+                    <option value="PCT_COL">% sobre otra columna</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="field-label" id="wiz-new-col-val-label" for="wiz-new-col-fill">Monto fijo por cuota (₲)</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <select id="wiz-new-col-ref" class="select hidden" style="flex: 1; min-width: 10rem;"></select>
+                  <input id="wiz-new-col-fill" class="input tabular-nums text-right" style="width: 9rem; flex: none;" inputmode="decimal" value="45.000" oninput="onColFillInput('wiz', this)" />
+                  <button class="btn btn-primary" onclick="addCustomColumn('wiz')">Aplicar columna</button>
+                </div>
+              </div>
+              <p class="field-hint">
+                Nombrala como te cobre tu banco. Después podés ajustar cualquier celda manualmente.
+              </p>
+            </div>
+
+            <div class="table-wrap table-scroll-y">
+              <table>
+                <thead id="wizard-thead"></thead>
+                <tbody id="wizard-tbody"></tbody>
+                <tfoot id="wizard-tfoot"></tfoot>
+              </table>
+            </div>
+
+            <div class="flex-between" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid hsl(var(--border));">
+              <div>
+                <div class="text-xs text-muted">Capital pendiente que va al Balance</div>
+                <div class="font-bold tabular-nums" id="wiz-total-capital" style="font-size: 1.25rem;">₲ 0</div>
+              </div>
+              <div class="flex-row">
+                <button class="btn btn-secondary" onclick="switchView('list')">Cancelar</button>
+                <button class="btn btn-gradient" onclick="confirmWizard()">Guardar Préstamo</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 3: DETALLE DE PRÉSTAMO (Counters con barra verde + Historial pagado
+             con opción Revertir + Edición centralizada vía "Editar préstamo")
+             ================================================================ -->
+        <section id="view-detail" class="hidden" style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <header class="page-header">
+            <div>
+              <button class="btn btn-ghost btn-sm" onclick="switchView('list')" style="padding-left: 0; margin-bottom: 0.25rem;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Volver a Préstamos</span>
+              </button>
+              <div class="flex-row">
+                <h1 class="page-title" id="det-title">Préstamo Auto Itaú</h1>
+                <span class="badge badge-emerald" id="det-status-badge">Activo</span>
+                <span class="badge badge-neutral" id="det-currency-badge">PYG</span>
+                <span class="badge badge-amber" id="det-next-badge">Vence 15 Nov</span>
+              </div>
+              <p class="page-subtitle" id="det-subtitle">Tasa 13,5% · Inicio Nov 2025 · 24 cuotas totales</p>
+            </div>
+            <div class="flex-row">
+              <button class="btn btn-danger-outline" onclick="openDeleteLoanModal()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                <span>Eliminar / Anular</span>
+              </button>
+              <button class="btn btn-secondary" onclick="openEditLoan()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                <span>Editar préstamo</span>
+              </button>
+              <button class="btn btn-gradient" id="det-pay-next-btn" onclick="payNextFromDetail()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                <span>Pagar cuota #13</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- 4 Detail KPIs (Barra verde en Capital Pendiente, montos y títulos alineados) -->
+          <div class="kpi-grid-4">
+            <div class="kpi-card hero">
+              <div class="kpi-glow" aria-hidden="true"></div>
+              <div class="kpi-label">
+                <span>Capital Pendiente</span>
+                <span class="badge tabular-nums" id="det-kpi-pct-badge" style="background: rgba(16, 185, 129, 0.25); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.28);">47% pagado</span>
+              </div>
+              <div>
+                <div class="kpi-value tabular-nums" id="det-kpi-pending-cap">₲ 32.010.673</div>
+                <div class="progress-track" style="margin-top: 0.5rem; background: rgba(255, 255, 255, 0.22);">
+                  <div class="progress-fill" id="det-kpi-green-bar" style="width: 47%; background: #34d399;"></div>
+                </div>
+                <div class="kpi-footer tabular-nums" id="det-kpi-pending-sub" style="margin-top: 0.45rem;">De ₲ 60.000.000 solicitados</div>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-label"><span>Total Ya Pagado</span></div>
+              <div>
+                <div class="kpi-value tabular-nums" id="det-kpi-total-paid">₲ 34.939.452</div>
+                <div class="kpi-footer tabular-nums" id="det-kpi-paid-breakdown">
+                  ₲ 27.989.327 capital · ₲ 6.950.125 intereses y cargos
+                </div>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-label"><span>Cuotas del Préstamo</span></div>
+              <div>
+                <div class="kpi-value tabular-nums" id="det-kpi-installments">12 / 24</div>
+                <div class="kpi-footer tabular-nums" id="det-kpi-installments-sub">12 pagadas · 12 pendientes</div>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-label">
+                <span>Próximo Vencimiento</span>
+                <span class="badge badge-amber" id="det-kpi-due-badge">15 Nov</span>
+              </div>
+              <div>
+                <div class="kpi-value tabular-nums" id="det-kpi-next-amount">₲ 2.911.621</div>
+                <div class="kpi-footer" id="det-kpi-next-sub">15/11/2026 · Cuota #13</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detail Read-only Payment Schedule with Operational Actions (Pagar / Revertir) -->
+          <div class="card">
+            <div class="flex-between" style="margin-bottom: 1rem;">
+              <div class="segmented" role="tablist">
+                <button class="seg-btn active" id="det-filter-pending" onclick="filterDetailRows('PENDING', this)">Pendientes (12)</button>
+                <button class="seg-btn" id="det-filter-paid" onclick="filterDetailRows('PAID', this)">Pagadas (12)</button>
+                <button class="seg-btn" id="det-filter-all" onclick="filterDetailRows('ALL', this)">Todas (24)</button>
+              </div>
+
+              <div class="flex-row" id="det-account-chip" style="gap: 0.75rem;">
+                <span class="text-xs text-muted">
+                  Pasivo contable: <strong style="color: hsl(var(--foreground));" id="det-liability-name">Préstamo Auto Itaú</strong>
+                  <span class="badge badge-neutral" style="font-size: 0.65rem; margin-left: 0.25rem;">Control · Solo lectura</span>
+                </span>
+                <span class="text-xs text-muted">·</span>
+                <span class="text-xs text-muted">
+                  Pago habitual: <strong style="color: hsl(var(--foreground));" id="det-account-name">Itaú Cuenta Corriente</strong>
+                </span>
+              </div>
+            </div>
+
+            <div class="table-wrap table-scroll-y">
+              <table>
+                <thead id="detail-thead"></thead>
+                <tbody id="detail-tbody"></tbody>
+                <tfoot id="detail-tfoot"></tfoot>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 4: EDITAR PRÉSTAMO (Centralizado: Datos + Palancas + Impacto
+             Antes/Después + Recalcular opcional + Columnas + Cuotas editables)
+             ================================================================ -->
+        <section id="view-edit" class="hidden" style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <header class="page-header">
+            <div>
+              <button class="btn btn-ghost btn-sm" onclick="cancelEditLoan()" style="padding-left: 0; margin-bottom: 0.25rem;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                <span id="edit-back-label">Volver a Préstamo Auto Itaú</span>
+              </button>
+              <div class="flex-row">
+                <h1 class="page-title">Editar Préstamo</h1>
+                <span class="badge badge-vivid tabular-nums" id="edit-paid-lock-badge">12 cuotas pagadas protegidas</span>
+              </div>
+              <p class="page-subtitle">Actualizá los datos del préstamo, reajustá el capital o la tasa cuando cambie con tu banco, o editá manualmente las cuotas pendientes.</p>
+            </div>
+          </header>
+
+          <!-- Step 1: General Data + Adjustment Levers -->
+          <div class="card">
+            <h2 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 700;">1. Datos y condiciones vigentes</h2>
+
+            <div class="grid-3" style="margin-bottom: 1rem;">
+              <div>
+                <label class="field-label" for="edit-name">Nombre del préstamo *</label>
+                <input id="edit-name" class="input" type="text" oninput="editDraft.name = this.value; syncEditLiabilityPreview(); updateEditImpact()" />
+              </div>
+              <div>
+                <label class="field-label" for="edit-liability-acc">
+                  <span>Cuenta de Pasivo vinculada</span>
+                  <span class="badge badge-neutral" style="font-size: 0.65rem;">Inmutable</span>
+                </label>
+                <input id="edit-liability-acc" class="input font-semibold" disabled value="Préstamo Auto Itaú (PYG)" />
+                <p class="field-hint">Cuenta de control dedicada. Su nombre se sincroniza al renombrar.</p>
+              </div>
+              <div>
+                <label class="field-label" for="edit-bank-acc-btn">Cuenta bancaria habitual de pago</label>
+                <input type="hidden" id="edit-bank-acc" value="" />
+                <button type="button" id="edit-bank-acc-btn" class="picker-trigger" onclick="openAccountPicker({ targetId: 'edit-bank-acc', mode: 'PAYMENT_ACCOUNTS', allowEmpty: true, emptyLabel: 'Elegir al momento de pagar', title: 'Cuenta bancaria habitual de pago', onChange: (val) => { editDraft.bankAccount = val; } })">
+                  <span class="picker-trigger-label"><span class="picker-dot picker-dot-asset"></span><span>Itaú Cuenta Corriente</span></span>
+                  <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <p class="field-hint">Editable; solo pre-rellena el selector al pagar futuras cuotas.</p>
+              </div>
+            </div>
+
+            <div class="grid-4" style="margin-bottom: 1.25rem;">
+              <div>
+                <label class="field-label" for="edit-orig-principal">
+                  <span>Monto original (₲)</span>
+                  <span class="badge badge-neutral" style="font-size: 0.65rem;">No editable</span>
+                </label>
+                <input id="edit-orig-principal" class="input tabular-nums text-right font-semibold" disabled value="60.000.000" />
+                <p class="field-hint" id="edit-orig-hint">Ya se amortizaron ₲ 27.850.000</p>
+              </div>
+
+              <div>
+                <label class="field-label" for="edit-pending-cap">Capital pendiente (₲)</label>
+                <input id="edit-pending-cap" class="input tabular-nums text-right font-bold" inputmode="numeric" value="32.150.000" oninput="formatThousandInput(this); onEditLeverInput()" />
+                <p class="field-hint">Modificalo si adelantaste cuotas o cambió tu saldo real.</p>
+              </div>
+
+              <div>
+                <label class="field-label" for="edit-rate">Tasa (%)</label>
+                <input id="edit-rate" class="input tabular-nums text-right" inputmode="decimal" value="13.5" oninput="onEditLeverInput()" />
+                <p class="field-hint">Usada al recalcular intereses futuros.</p>
+              </div>
+
+              <div>
+                <label class="field-label" for="edit-pending-count">Cuotas pendientes y próximo vencimiento</label>
+                <div style="display: flex; gap: 0.5rem; min-width: 0;">
+                  <input id="edit-pending-count" class="input tabular-nums text-right" style="width: 4.5rem; flex: none;" inputmode="numeric" value="12" oninput="onEditLeverInput()" />
+                  <input id="edit-next-date" class="input tabular-nums" style="flex: 1; min-width: 0;" type="date" value="2026-11-15" oninput="onEditLeverInput()" />
+                </div>
+                <p class="field-hint" id="edit-range-hint">Abarca cuotas #13 a #24.</p>
+              </div>
+            </div>
+
+            <!-- Live Transparent Before/After Impact Panel (Replaces the scary black-box modal!) -->
+            <div class="impact-panel">
+              <div class="flex-between">
+                <div>
+                  <div class="text-xs font-bold" style="color: hsl(var(--foreground));">Efecto de tus cambios antes de guardar</div>
+                  <div class="text-xs text-muted" id="edit-lever-status">
+                    Editá las condiciones arriba y presioná "Recalcular plan de pagos", o ajustá celdas directamente abajo.
+                  </div>
+                </div>
+                <div class="flex-row">
+                  <button type="button" class="btn btn-secondary btn-sm hidden" id="edit-undo-btn" onclick="resetEditToDefault()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                    <span>Restaurar valores iniciales</span>
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" id="edit-recalc-btn" onclick="recalcEditPendingRows()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                    <span>Recalcular plan de pagos</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="impact-metrics">
+                <div class="impact-stat">
+                  <span class="text-xs text-muted font-semibold">Capital pendiente en tabla</span>
+                  <span class="text-sm font-bold tabular-nums" id="imp-cap-val">₲ 32.150.000</span>
+                  <span class="text-xs text-muted tabular-nums" id="imp-cap-diff">Sin diferencia vs. saldo actual</span>
+                </div>
+                <div class="impact-stat">
+                  <span class="text-xs text-muted font-semibold">Cuota mensual promedio</span>
+                  <span class="text-sm font-bold tabular-nums" id="imp-pmt-val">₲ 2.855.000</span>
+                  <span class="text-xs text-muted tabular-nums" id="imp-pmt-diff">Igual al plan guardado</span>
+                </div>
+                <div class="impact-stat">
+                  <span class="text-xs text-muted font-semibold">Intereses pendientes</span>
+                  <span class="text-sm font-bold tabular-nums" id="imp-int-val">₲ 2.150.000</span>
+                  <span class="text-xs text-muted tabular-nums" id="imp-int-diff">Igual al plan guardado</span>
+                </div>
+                <div class="impact-stat">
+                  <span class="text-xs text-muted font-semibold">Cuotas restantes</span>
+                  <span class="text-sm font-bold tabular-nums" id="imp-cnt-val">12 cuotas (#13–#24)</span>
+                  <span class="text-xs text-muted" id="imp-cnt-diff">12 pagadas quedan intactas</span>
+                </div>
+              </div>
+
+              <!-- Appears ONLY when the sum of pending capital differs from saved balance -->
+              <div id="edit-diff-reason-box" class="hidden" style="padding-top: 0.875rem; border-top: 1px solid hsl(var(--border)); display: flex; flex-direction: column; gap: 0.75rem;">
+                <div>
+                  <div class="text-xs font-bold" id="edit-diff-reason-title">El capital pendiente cambió en ₲ 0</div>
+                  <div class="text-xs text-muted" id="edit-diff-reason-hint">Elegí cómo reflejar esta diferencia al guardar para mantener tu Balance al día.</div>
+                </div>
+
+                <div class="grid-3" role="radiogroup" aria-label="Origen del ajuste de capital">
+                  <button type="button" class="mode-card selected" id="diff-card-CASH_TRANSFER" onclick="selectEditDiffReason('CASH_TRANSFER')">
+                    <svg class="icon" style="color: hsl(var(--brand-vivid)); margin-bottom: 0.125rem;" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+                    <span class="font-bold text-xs" id="diff-card-cash-title">Con mi cuenta bancaria</span>
+                    <span class="text-xs text-muted" id="diff-card-cash-desc">Adelanté pago desde mi banco o efectivo.</span>
+                  </button>
+
+                  <button type="button" class="mode-card" id="diff-card-CATEGORY" onclick="selectEditDiffReason('CATEGORY')">
+                    <svg class="icon" style="color: hsl(var(--emerald-text)); margin-bottom: 0.125rem;" viewBox="0 0 24 24"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+                    <span class="font-bold text-xs" id="diff-card-cat-title">Contra una categoría</span>
+                    <span class="text-xs text-muted" id="diff-card-cat-desc">Descuento o quita a mi favor (Ingreso).</span>
+                  </button>
+
+                  <button type="button" class="mode-card" id="diff-card-CAPITAL_ADJUSTMENT" onclick="selectEditDiffReason('CAPITAL_ADJUSTMENT')">
+                    <svg class="icon" style="color: hsl(var(--amber-text)); margin-bottom: 0.125rem;" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                    <span class="font-bold text-xs">Ajuste contra Capital</span>
+                    <span class="text-xs text-muted">Corrección de saldo sin mover caja ni gastos.</span>
+                  </button>
+                </div>
+
+                <div style="display: flex; gap: 0.625rem; flex-wrap: wrap; align-items: end;">
+                  <div id="edit-diff-pay-wrap" style="flex: 1; min-width: 13rem;">
+                    <label class="field-label" for="edit-diff-pay-acc-btn" id="edit-diff-pay-label">Cuenta bancaria / efectivo *</label>
+                    <input type="hidden" id="edit-diff-pay-acc" value="Itaú Cuenta Corriente" />
+                    <button type="button" id="edit-diff-pay-acc-btn" class="picker-trigger" onclick="openAccountPicker({ targetId: 'edit-diff-pay-acc', mode: 'PAYMENT_ACCOUNTS', title: 'Seleccionar cuenta bancaria / efectivo' })">
+                      <span class="picker-trigger-label"><span class="picker-dot picker-dot-asset"></span><span>Itaú Cuenta Corriente</span></span>
+                      <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </div>
+
+                  <div id="edit-diff-cat-wrap" class="hidden" style="flex: 1; min-width: 13rem;">
+                    <label class="field-label" for="edit-diff-cat-acc-btn" id="edit-diff-cat-label">Categoría *</label>
+                    <input type="hidden" id="edit-diff-cat-acc" value="Otros Ingresos / Descuentos" />
+                    <button type="button" id="edit-diff-cat-acc-btn" class="picker-trigger" onclick="openEditDiffCatPicker()">
+                      <span class="picker-trigger-label"><span class="picker-dot picker-dot-income"></span><span>Otros Ingresos / Descuentos</span></span>
+                      <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </div>
+
+                  <div id="edit-diff-cap-info" class="hidden text-xs text-muted" style="flex: 1; min-width: 13rem; padding: 0.625rem 0.75rem; border-radius: var(--radius-lg); background: hsl(var(--card)); border: 1px solid hsl(var(--border));">
+                    Se registrará automáticamente contra tu cuenta de <strong style="color: hsl(var(--foreground));">Capital</strong> sin alterar tus saldos de Caja ni el resultado del mes.
+                  </div>
+
+                  <div style="width: 10rem; flex: none;">
+                    <label class="field-label" for="edit-diff-date">Fecha del ajuste</label>
+                    <input id="edit-diff-date" class="input tabular-nums" type="date" value="2026-11-18" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Editable Schedule + Dynamic Columns + Read-Only History Option -->
+          <div class="card">
+            <div class="flex-between" style="margin-bottom: 0.75rem;">
+              <div>
+                <h2 style="margin: 0; font-size: 1rem; font-weight: 700;">
+                  2. Plan de pagos <span id="edit-table-count-label" class="text-muted font-medium">(12 cuotas pendientes)</span>
+                </h2>
+                <p class="text-xs text-muted" style="margin: 0.125rem 0 0;">
+                  Agregá o quitá cualquier columna para las cuotas venideras. Las cuotas pagadas no se modifican.
+                </p>
+              </div>
+              <div class="flex-row">
+                <div class="segmented" role="tablist">
+                  <button type="button" class="seg-btn active" id="edit-mode-pending" onclick="setEditRowFilter('PENDING', this)">Solo pendientes</button>
+                  <button type="button" class="seg-btn" id="edit-mode-all" onclick="setEditRowFilter('ALL', this)">Incluir pagadas</button>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAddColForm('edit')">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                  <span>Agregar columna</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Discreet Smart Column Helper Drawer (Edit Mode — supports IVA on ANY column!) -->
+            <div id="edit-add-col-form" class="card-tint hidden" style="margin-bottom: 1rem;">
+              <div class="flex-between" style="margin-bottom: 0.625rem;">
+                <span class="text-xs font-bold">Agregar columna a cuotas pendientes</span>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="toggleAddColForm('edit')">Cerrar</button>
+              </div>
+
+              <div class="flex-row" style="margin-bottom: 0.875rem;">
+                <span class="text-xs text-muted">Atajos sugeridos:</span>
+                <button type="button" class="chip-preset" onclick="applyColPreset('edit', 'IVA s/ Interés', 'PCT_COL', '10', 'interest')">IVA 10% s/ interés</button>
+                <button type="button" class="chip-preset" onclick="applyColPreset('edit', 'IVA s/ Seguro', 'PCT_COL', '10', 'seguro')">IVA 10% s/ Seguro</button>
+                <button type="button" class="chip-preset" onclick="applyColPreset('edit', 'Seguro de Vida', 'PCT_CAPITAL', '0.12')">Seguro (% s/ capital)</button>
+                <button type="button" class="chip-preset" onclick="applyColPreset('edit', 'Gastos Adm.', 'FIXED', '25000')">Gasto fijo mensual</button>
+                <button type="button" class="chip-preset" onclick="applyColPreset('edit', 'Otro cargo', 'ZERO', '0')">En blanco (a mano)</button>
+              </div>
+
+              <div class="grid-3" style="margin-bottom: 0.75rem;">
+                <div>
+                  <label class="field-label" for="edit-new-col-name">Nombre de la columna</label>
+                  <input id="edit-new-col-name" class="input" type="text" placeholder="Ej. IVA s/ Seguro, Solidaridad..." value="IVA s/ Interés" />
+                </div>
+                <div>
+                  <label class="field-label" for="edit-new-col-exp-btn">Categoría de gasto *</label>
+                  <input type="hidden" id="edit-new-col-exp" value="exp_iva" />
+                  <button type="button" id="edit-new-col-exp-btn" class="picker-trigger" onclick="openAccountPicker({ targetId: 'edit-new-col-exp', mode: 'EXPENSES', title: 'Seleccionar categoría de gasto' })">
+                    <span class="picker-trigger-label"><span class="picker-dot picker-dot-expense"></span><span>IVA / Impuestos Financieros</span></span>
+                    <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+                <div>
+                  <label class="field-label" for="edit-new-col-mode">Cómo autorellenar</label>
+                  <select id="edit-new-col-mode" class="select" onchange="updateColRuleUI('edit')">
+                    <option value="ZERO">En blanco (₲ 0 para editar a mano)</option>
+                    <option value="FIXED">Monto fijo en pendientes (₲)</option>
+                    <option value="PCT_CAPITAL">% sobre capital pendiente</option>
+                    <option value="PCT_COL" selected>% sobre otra columna</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="field-label" id="edit-new-col-val-label" for="edit-new-col-fill">Porcentaje (%) y columna base</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <select id="edit-new-col-ref" class="select" style="flex: 1; min-width: 11rem;"></select>
+                  <input id="edit-new-col-fill" class="input tabular-nums text-right" style="width: 7.5rem; flex: none;" inputmode="decimal" value="10" oninput="onColFillInput('edit', this)" />
+                  <button type="button" class="btn btn-primary" onclick="addCustomColumn('edit')">Aplicar columna</button>
+                </div>
+              </div>
+              <p class="field-hint">
+                Solo se agrega sobre las cuotas pendientes; tus cuotas ya pagadas se mantienen tal como las abonaste.
+              </p>
+            </div>
+
+            <div class="table-wrap table-scroll-y">
+              <table>
+                <thead id="edit-thead"></thead>
+                <tbody id="edit-tbody"></tbody>
+                <tfoot id="edit-tfoot"></tfoot>
+              </table>
+            </div>
+
+            <div class="flex-between" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid hsl(var(--border));">
+              <div>
+                <div class="text-xs text-muted">Resumen al guardar</div>
+                <div class="text-sm font-semibold tabular-nums" id="edit-save-summary">
+                  12 cuotas pendientes · Capital pendiente total: ₲ 32.150.000
+                </div>
+              </div>
+              <div class="flex-row">
+                <button type="button" class="btn btn-secondary" onclick="cancelEditLoan()">Cancelar</button>
+                <button type="button" class="btn btn-gradient" onclick="saveEditLoan()">Guardar cambios del préstamo</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Bar -->
+  <nav class="mobile-nav" aria-label="Navegación móvil">
+    <button class="mobile-nav-btn active" onclick="switchView('list')">Préstamos</button>
+    <button class="mobile-nav-btn" onclick="switchView('wizard')">Nuevo</button>
+    <button class="mobile-nav-btn" onclick="switchView('detail')">Detalle</button>
+    <button class="mobile-nav-btn" onclick="openEditLoan()">Editar</button>
+  </nav>
+
+  <!-- ======================================================================
+       MODAL 1: PAGAR CUOTA (Limpio y conectado al estado en vivo)
+       ====================================================================== -->
+  <div id="pay-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pay-modal-title">
+    <div class="modal-panel">
+      <div class="flex-between">
+        <div>
+          <h2 id="pay-modal-title" style="margin: 0; font-size: 1.0625rem; font-weight: 700;">Pagar cuota #13</h2>
+          <p id="pay-modal-sub" class="text-xs text-muted" style="margin: 0.125rem 0 0;">Préstamo Auto Itaú</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="closePayModal()" aria-label="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="card-tint flex-between" style="padding: 0.75rem 1rem;">
+        <span class="text-xs font-semibold text-muted">Total previsto de la cuota</span>
+        <span class="text-sm font-bold tabular-nums" id="pay-total-badge">₲ 2.855.000</span>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label class="field-label" for="pay-account-btn">Cuenta de pago</label>
+          <input type="hidden" id="pay-account" value="Itaú Cuenta Corriente" />
+          <button type="button" id="pay-account-btn" class="picker-trigger" onclick="openAccountPicker({ targetId: 'pay-account', mode: 'PAYMENT_ACCOUNTS', title: 'Seleccionar cuenta de pago', onChange: () => updatePayPreview() })">
+            <span class="picker-trigger-label"><span class="picker-dot picker-dot-asset"></span><span>Itaú Cuenta Corriente</span></span>
+            <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div>
+          <label class="field-label" for="pay-date">Fecha de pago</label>
+          <input id="pay-date" class="input tabular-nums" type="date" value="2026-11-16" />
+        </div>
+      </div>
+
+      <div id="pay-fields-grid" class="grid-3"></div>
+
+      <div class="flex-between text-xs text-muted" style="padding-top: 0.5rem; border-top: 1px solid hsl(var(--border));">
+        <span id="pay-summary-text">Se debitará de Itaú Cuenta Corriente (₲)</span>
+        <span class="font-bold tabular-nums" style="color: hsl(var(--foreground)); font-size: 0.9375rem;" id="prev-total">₲ 2.855.000</span>
+      </div>
+
+      <div class="flex-between">
+        <span class="text-xs text-muted">Ctrl+Enter para confirmar</span>
+        <div class="flex-row">
+          <button class="btn btn-secondary" onclick="closePayModal()">Cancelar</button>
+          <button class="btn btn-gradient" onclick="confirmPayModal()">Confirmar pago</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: REVERTIR PAGO DE CUOTA
+       ====================================================================== -->
+  <div id="revert-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="revert-modal-title">
+    <div class="modal-panel">
+      <div class="flex-between">
+        <div>
+          <h2 id="revert-modal-title" style="margin: 0; font-size: 1.0625rem; font-weight: 700;">Revertir pago de cuota</h2>
+          <p id="revert-modal-sub" class="text-xs text-muted" style="margin: 0.125rem 0 0;">Préstamo Auto Itaú</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="closeRevertModal()" aria-label="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="card-tint" style="border-color: hsl(var(--rose-border)); background: hsl(var(--rose-bg));">
+        <div class="text-xs font-bold text-rose" style="margin-bottom: 0.25rem;" id="revert-amount-line">Vas a revertir el pago de ₲ 2.855.000</div>
+        <div class="text-xs" style="color: hsl(var(--foreground));" id="revert-detail-line">
+          La cuota #12 volverá a estado Pendiente y el importe se devolverá al saldo de Itaú Cuenta Corriente (₲).
+        </div>
+      </div>
+
+      <div id="revert-alloc-list" class="hidden" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+
+      <div class="flex-between">
+        <span class="text-xs text-muted">El historial contable quedará compensado.</span>
+        <div class="flex-row">
+          <button class="btn btn-secondary" onclick="closeRevertModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="confirmRevertModal()">Confirmar reversión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 3: ELIMINAR / ANULAR PRÉSTAMO (Spec §5.3)
+       ====================================================================== -->
+  <div id="delete-loan-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="delete-loan-title">
+    <div class="modal-panel">
+      <div class="flex-between">
+        <div>
+          <h2 id="delete-loan-title" style="margin: 0; font-size: 1.0625rem; font-weight: 700;">Eliminar / Anular préstamo</h2>
+          <p id="delete-loan-sub" class="text-xs text-muted" style="margin: 0.125rem 0 0;">Préstamo Auto Itaú</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="closeDeleteLoanModal()" aria-label="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="card-tint" id="delete-loan-box" style="border-color: hsl(var(--rose-border)); background: hsl(var(--rose-bg));">
+        <div class="text-xs font-bold text-rose" style="margin-bottom: 0.25rem;" id="delete-loan-msg-title"></div>
+        <div class="text-xs" style="color: hsl(var(--foreground));" id="delete-loan-msg-body"></div>
+      </div>
+
+      <div class="flex-between">
+        <span class="text-xs text-muted" id="delete-loan-footer-hint">Integridad contable garantizada</span>
+        <div class="flex-row">
+          <button class="btn btn-secondary" onclick="closeDeleteLoanModal()">Cerrar</button>
+          <button class="btn btn-primary hidden" id="delete-loan-confirm-btn" onclick="confirmDeleteLoanModal()">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 4: SELECTOR UNIVERSAL DE CUENTAS (AccountPickerSheet)
+       ====================================================================== -->
+  <div id="universal-account-picker-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="uap-title" style="z-index: 80;">
+    <div class="modal-panel" style="max-width: 28rem; gap: 0.75rem;">
+      <div class="flex-between">
+        <div>
+          <h2 id="uap-title" style="margin: 0; font-size: 1rem; font-weight: 700;">Seleccionar cuenta</h2>
+          <p id="uap-subtitle" class="text-xs text-muted" style="margin: 0.125rem 0 0;">Selector universal de ContaWave</p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-icon" onclick="closeAccountPicker()" aria-label="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div style="position: relative;">
+        <svg class="icon icon-sm text-muted" viewBox="0 0 24 24" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none;">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input id="uap-search" class="input" type="text" placeholder="Buscar cuenta o categoría..." style="padding-left: 2.2rem;" oninput="renderAccountPickerList()" />
+      </div>
+
+      <div id="uap-exp-filter-bar" class="hidden" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+        <span class="text-xs text-muted">Mostrando categorías recomendadas</span>
+        <div class="flex-row" style="gap: 0.25rem;">
+          <button type="button" id="uap-tab-fin" class="chip-preset" onclick="setUapExpenseScope('FIN')">Financieras</button>
+          <button type="button" id="uap-tab-all" class="chip-preset" onclick="setUapExpenseScope('ALL')">Todas las de gasto</button>
+        </div>
+      </div>
+
+      <div id="uap-list" style="max-height: 16rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.25rem; padding-right: 0.15rem;"></div>
+
+      <div style="border-top: 1px solid hsl(var(--border)); padding-top: 0.625rem;">
+        <button type="button" id="uap-create-toggle" class="btn btn-ghost btn-sm" style="width: 100%; justify-content: flex-start; gap: 0.4rem;" onclick="toggleUapCreateForm()">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span id="uap-create-btn-label">Crear nueva cuenta</span>
+        </button>
+        <div id="uap-create-form" class="hidden" style="display: flex; gap: 0.375rem; margin-top: 0.5rem;">
+          <input id="uap-create-name" class="input" type="text" placeholder="Nombre de la nueva cuenta..." style="flex: 1; min-width: 0; font-size: 0.8125rem;" />
+          <button type="button" class="btn btn-primary btn-sm" onclick="submitUapCreateAccount()">Crear y usar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden" style="position: fixed; bottom: 4.5rem; right: 1.5rem; z-index: 90; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); padding: 0.75rem 1rem; border-radius: var(--radius-xl); font-size: 0.8125rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.2);"></div>
+
+  <script>
+    const TODAY_ISO = '2026-11-18';
+    const EXISTING_ACCOUNT_NAMES = ['Préstamo Personal', 'Itaú Cuenta Corriente', 'Ueno Caja de Ahorro', 'Capital'];
+    const EXPENSE_CATEGORIES = [
+      { id: 'exp_int', name: 'Intereses y Cargos Financieros', isFinancial: true },
+      { id: 'exp_seg', name: 'Seguros', isFinancial: true },
+      { id: 'exp_iva', name: 'IVA / Impuestos Financieros', isFinancial: true },
+      { id: 'exp_adm', name: 'Gastos Administrativos Bancarios', isFinancial: true },
+      { id: 'exp_food', name: 'Supermercado', isFinancial: false },
+      { id: 'exp_rest', name: 'Comida / Restaurantes', isFinancial: false },
+      { id: 'exp_trans', name: 'Transporte', isFinancial: false },
+    ];
+    const PAYMENT_ACCOUNTS = [
+      { id: 'Itaú Cuenta Corriente', name: 'Itaú Cuenta Corriente', group: 'Banco' },
+      { id: 'Ueno Caja de Ahorro', name: 'Ueno Caja de Ahorro', group: 'Banco' },
+      { id: 'Efectivo / Caja General', name: 'Efectivo / Caja General', group: 'Efectivo' },
+    ];
+    const INCOME_CATEGORIES = [
+      { id: 'Otros Ingresos / Descuentos', name: 'Otros Ingresos / Descuentos' },
+      { id: 'Ingresos Extra', name: 'Ingresos Extra' },
+    ];
+    let activePickerConfig = null;
+    let uapExpenseScope = 'FIN';
+
+    const getCurrencySymbol = (cur) => (cur === 'USD' ? '$' : '₲');
+    const fmt = (n, cur) => {
+      const sym = getCurrencySymbol(cur || (typeof primaryLoan !== 'undefined' ? primaryLoan.currency : 'PYG'));
+      return sym + ' ' + Math.round(Number(n) || 0).toLocaleString('es-PY');
+    };
+    const fmtNum = (n) => Math.round(Number(n) || 0).toLocaleString('es-PY');
+    const parseNum = (str) => Number(String(str || '').replace(/\./g, '').replace(/[^\d-]/g, '')) || 0;
+    const escHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const getExpName = (id) => EXPENSE_CATEGORIES.find((c) => c.id === id)?.name || 'Intereses y Cargos Financieros';
+    const fmtShortDate = (iso) => {
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    };
+    const fmtBadgeDate = (iso) => {
+      if (!iso) return '—';
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const parts = iso.split('-');
+      const d = Number(parts[2]);
+      const m = months[Math.max(0, Number(parts[1]) - 1)] || '';
+      return `${d} ${m}`;
+    };
+
+    // Live thousand separator preserving cursor position
+    function formatThousandInput(el) {
+      const raw = el.value;
+      const selStart = el.selectionStart || raw.length;
+      const digitsBeforeCursor = raw.slice(0, selStart).replace(/\D/g, '').length;
+      const digits = raw.replace(/\D/g, '');
+      const formatted = digits ? Number(digits).toLocaleString('es-PY') : '';
+      el.value = formatted;
+
+      let seen = 0;
+      let newPos = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (seen >= digitsBeforeCursor) break;
+        if (/\d/.test(formatted[i])) seen++;
+        newPos = i + 1;
+      }
+      if (digitsBeforeCursor === 0) newPos = 0;
+      el.setSelectionRange(newPos, newPos);
+    }
+
+    function switchView(viewName) {
+      if (viewName === 'edit' && !editInitialized) {
+        initEditDraftFromLoan();
+      }
+      ['list', 'wizard', 'detail', 'edit'].forEach((v) => {
+        document.getElementById('view-' + v).classList.toggle('hidden', v !== viewName);
+      });
+      document.querySelectorAll('[data-view-btn]').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-view-btn') === viewName);
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      document.getElementById('themeToggleBtn').querySelector('span').textContent = isDark ? 'Light' : 'Dark';
+    }
+
+    function toggleListState(state) {
+      switchView('list');
+      document.getElementById('list-normal').classList.toggle('hidden', state !== 'normal');
+      document.getElementById('list-empty').classList.toggle('hidden', state !== 'empty');
+      document.getElementById('list-skeleton').classList.toggle('hidden', state !== 'skeleton');
+    }
+
+    function setListDisplay(mode) {
+      document.getElementById('display-cards').classList.toggle('hidden', mode !== 'CARDS');
+      document.getElementById('display-agenda').classList.toggle('hidden', mode !== 'AGENDA');
+      document.getElementById('mode-btn-cards').classList.toggle('active-brand', mode === 'CARDS');
+      document.getElementById('mode-btn-agenda').classList.toggle('active-brand', mode === 'AGENDA');
+    }
+
+    let currentListFilter = 'ALL';
+    let currentSearchTerm = '';
+
+    function applyListFilters() {
+      document.querySelectorAll('.loan-card').forEach((el) => {
+        const name = el.getAttribute('data-name') || '';
+        const status = el.getAttribute('data-status') || 'ACTIVE';
+        const matchStatus = currentListFilter === 'ALL' || status === currentListFilter;
+        const matchSearch = !currentSearchTerm || name.includes(currentSearchTerm);
+        el.classList.toggle('hidden', !(matchStatus && matchSearch));
+      });
+    }
+
+    function filterLoans(status, btn) {
+      currentListFilter = status;
+      btn.parentElement.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyListFilters();
+    }
+
+    function searchLoans(q) {
+      currentSearchTerm = q.trim().toLowerCase();
+      applyListFilters();
+    }
+
+    // =========================================================================
+    // LIVE PRIMARY LOAN STATE (Shared between Lista, Detalle, Editar & Modals)
+    // =========================================================================
+    const primaryLoan = {
+      name: 'Préstamo Auto Itaú',
+      currency: 'PYG',
+      openingDate: '2025-11-15',
+      bankAccount: 'Itaú Cuenta Corriente',
+      status: 'ACTIVE',
+      originalPrincipal: 60000000,
+      annualRate: 13.5,
+      startLabel: 'Nov 2025',
+      columns: [
+        { id: 'interest', name: 'Interés', expenseAccountId: 'exp_int', isActive: true, locked: true, rule: 'CALC', ruleVal: 0, refColId: '' },
+        { id: 'seguro', name: 'Seguro de Vida', expenseAccountId: 'exp_seg', isActive: true, locked: false, rule: 'FIXED', ruleVal: 45000, refColId: '' },
+      ],
+      rows: (() => {
+        const rows = [];
+        const P = 60000000;
+        const n = 24;
+        const r = 0.135 / 12;
+        const pmt = (P * r) / (1 - Math.pow(1 + r, -n));
+        let bal = P;
+        const baseDate = new Date('2025-11-15T00:00:00');
+        for (let i = 1; i <= n; i++) {
+          const d = new Date(baseDate);
+          d.setMonth(d.getMonth() + (i - 1));
+          const dueDate = d.toISOString().slice(0, 10);
+          const intr = Math.round(bal * r);
+          const cap = i === n ? Math.round(bal) : Math.round(pmt - intr);
+          bal = Math.max(0, bal - cap);
+
+          const allocations = [];
+          if (i <= 12) {
+            allocations.push({
+              id: 'alloc_' + i + '_1',
+              paidAt: dueDate,
+              paidAccount: 'Itaú Cuenta Corriente',
+              allocatedPrincipal: cap,
+              allocatedCharges: { interest: intr, seguro: 45000 },
+            });
+          } else if (i === 13) {
+            // Cuota #13 con pago parcial previo para demostrar estado PARTIAL + OVERDUE y reversión 1:N
+            allocations.push({
+              id: 'alloc_13_1',
+              paidAt: '2026-11-16',
+              paidAccount: 'Itaú Cuenta Corriente',
+              allocatedPrincipal: 1000000,
+              allocatedCharges: { interest: 0, seguro: 45000 },
+            });
+          }
+
+          rows.push({
+            num: i,
+            dueDate,
+            principal: cap,
+            charges: {
+              interest: intr,
+              seguro: 45000,
+            },
+            allocations,
+          });
+        }
+        return rows;
+      })(),
+    };
+
+    function getRowDerived(row, cols) {
+      const paidPrincipal = (row.allocations || []).reduce((s, a) => s + (Number(a.allocatedPrincipal) || 0), 0);
+      const pendingPrincipal = Math.max(0, (Number(row.principal) || 0) - paidPrincipal);
+      const paidCharges = {};
+      const pendingCharges = {};
+      cols.forEach((c) => {
+        const scheduled = Number(row.charges[c.id]) || 0;
+        const paid = (row.allocations || []).reduce((s, a) => s + (Number((a.allocatedCharges || {})[c.id]) || 0), 0);
+        paidCharges[c.id] = paid;
+        pendingCharges[c.id] = Math.max(0, scheduled - paid);
+      });
+      const status = paidPrincipal >= row.principal ? 'PAID' : paidPrincipal > 0 ? 'PARTIAL' : 'PENDING';
+      const isOverdue = status !== 'PAID' && row.dueDate < TODAY_ISO;
+      const pendingTotal = pendingPrincipal + cols.reduce((s, c) => s + (pendingCharges[c.id] || 0), 0);
+      return { paidPrincipal, pendingPrincipal, paidCharges, pendingCharges, status, isOverdue, pendingTotal };
+    }
+
+    const rowChargesSum = (row, cols) => cols.filter((c) => c.isActive !== false).reduce((s, c) => s + (Number(row.charges[c.id]) || 0), 0);
+    const rowTotal = (row, cols) => (Number(row.principal) || 0) + rowChargesSum(row, cols);
+    const colHasAllocations = (loan, colId) => loan.rows.some((r) => (r.allocations || []).some((a) => Number((a.allocatedCharges || {})[colId]) > 0));
+
+    function computeLoanStats(loan) {
+      const paidRows = [];
+      const pendRows = [];
+      let pendingCap = 0;
+      let paidCap = 0;
+      let paidCharges = 0;
+      loan.rows.forEach((r) => {
+        const d = getRowDerived(r, loan.columns);
+        paidCap += d.paidPrincipal;
+        pendingCap += d.pendingPrincipal;
+        (r.allocations || []).forEach((a) => {
+          Object.values(a.allocatedCharges || {}).forEach((v) => { paidCharges += Number(v) || 0; });
+        });
+        if (d.status === 'PAID') paidRows.push(r);
+        else pendRows.push(r);
+      });
+      const totalPaid = paidCap + paidCharges;
+      const pctCapPaid = loan.originalPrincipal > 0
+        ? Math.min(100, Math.round((paidCap / loan.originalPrincipal) * 100))
+        : 0;
+      const nextRow = pendRows[0] || null;
+      const derivedLoanStatus = loan.status === 'CANCELLED' ? 'CANCELLED' : pendingCap <= 0 ? 'SETTLED' : 'ACTIVE';
+      return { paidRows, pendRows, pendingCap, paidCap, paidCharges, totalPaid, pctCapPaid, nextRow, derivedLoanStatus };
+    }
+
+    // =========================================================================
+    // UNIVERSAL ACCOUNT PICKER (AccountPickerSheet) & DYNAMIC COLUMN HELPERS
+    // =========================================================================
+    function getPickerMeta(mode, val, emptyLabel) {
+      if (!val) {
+        return { label: emptyLabel || 'Seleccionar cuenta...', dotClass: 'picker-dot-neutral' };
+      }
+      if (mode === 'EXPENSES') {
+        const found = EXPENSE_CATEGORIES.find((c) => c.id === val || c.name === val);
+        return { label: found ? found.name : val, dotClass: 'picker-dot-expense' };
+      }
+      if (mode === 'INCOMES') {
+        return { label: val, dotClass: 'picker-dot-income' };
+      }
+      return { label: val, dotClass: 'picker-dot-asset' };
+    }
+
+    function setPickerFieldValue(targetId, mode, value, emptyLabel) {
+      const hidden = document.getElementById(targetId);
+      const btn = document.getElementById(targetId + '-btn');
+      if (hidden) hidden.value = value ?? '';
+      if (btn) {
+        const meta = getPickerMeta(mode, value, emptyLabel);
+        btn.innerHTML = `
+          <span class="picker-trigger-label"><span class="picker-dot ${meta.dotClass}"></span><span>${escHtml(meta.label)}</span></span>
+          <svg class="icon icon-sm text-muted" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        `;
+      }
+    }
+
+    function openAccountPicker(config) {
+      activePickerConfig = config;
+      uapExpenseScope = 'FIN';
+      document.getElementById('uap-title').textContent = config.title || 'Seleccionar cuenta';
+      document.getElementById('uap-subtitle').textContent =
+        config.mode === 'EXPENSES'
+          ? 'Categorías de gasto del plan de cuentas'
+          : config.mode === 'INCOMES'
+            ? 'Categorías de ingreso del plan de cuentas'
+            : 'Cuentas líquidas de banco y efectivo';
+      document.getElementById('uap-search').value = '';
+      document.getElementById('uap-create-form').classList.add('hidden');
+      document.getElementById('uap-create-name').value = '';
+      document.getElementById('uap-create-btn-label').textContent =
+        config.mode === 'EXPENSES'
+          ? 'Crear nueva categoría de gasto'
+          : config.mode === 'INCOMES'
+            ? 'Crear nueva categoría de ingreso'
+            : 'Crear nueva cuenta';
+      const filterBar = document.getElementById('uap-exp-filter-bar');
+      filterBar.classList.toggle('hidden', config.mode !== 'EXPENSES');
+      if (config.mode === 'EXPENSES') {
+        document.getElementById('uap-tab-fin').classList.add('active');
+        document.getElementById('uap-tab-all').classList.remove('active');
+      }
+      renderAccountPickerList();
+      document.getElementById('universal-account-picker-modal').classList.add('open');
+      setTimeout(() => document.getElementById('uap-search')?.focus(), 40);
+    }
+
+    function closeAccountPicker() {
+      document.getElementById('universal-account-picker-modal').classList.remove('open');
+      activePickerConfig = null;
+    }
+
+    function setUapExpenseScope(scope) {
+      uapExpenseScope = scope;
+      document.getElementById('uap-tab-fin').classList.toggle('active', scope === 'FIN');
+      document.getElementById('uap-tab-all').classList.toggle('active', scope === 'ALL');
+      renderAccountPickerList();
+    }
+
+    function renderAccountPickerList() {
+      if (!activePickerConfig) return;
+      const q = (document.getElementById('uap-search').value || '').trim().toLowerCase();
+      const listEl = document.getElementById('uap-list');
+      const currentVal = activePickerConfig.currentValue !== undefined
+        ? activePickerConfig.currentValue
+        : (document.getElementById(activePickerConfig.targetId)?.value ?? '');
+
+      let items = [];
+      let dotClass = 'picker-dot-asset';
+      if (activePickerConfig.mode === 'EXPENSES') {
+        dotClass = 'picker-dot-expense';
+        items = EXPENSE_CATEGORIES
+          .filter((c) => uapExpenseScope === 'ALL' || q.length > 0 || c.isFinancial)
+          .map((c) => ({ id: c.id, name: c.name, badge: c.isFinancial ? 'Financiera' : 'General' }));
+      } else if (activePickerConfig.mode === 'INCOMES') {
+        dotClass = 'picker-dot-income';
+        items = INCOME_CATEGORIES.map((c) => ({ id: c.id, name: c.name, badge: 'Ingreso' }));
+      } else {
+        items = PAYMENT_ACCOUNTS.map((a) => ({ id: a.id, name: a.name, badge: a.group }));
+      }
+
+      if (q) {
+        items = items.filter((it) => it.name.toLowerCase().includes(q));
+      }
+
+      let html = '';
+      if (activePickerConfig.allowEmpty && !q) {
+        const isSel = !currentVal;
+        html += `
+          <button type="button" class="picker-list-item ${isSel ? 'selected' : ''}" onclick="selectAccountPickerItem('')">
+            <span class="picker-trigger-label"><span class="picker-dot picker-dot-neutral"></span><span>${escHtml(activePickerConfig.emptyLabel || 'Elegir al momento de pagar')}</span></span>
+            ${isSel ? '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
+          </button>
+        `;
+      }
+
+      if (!items.length) {
+        html += `<div class="text-xs text-muted" style="padding: 1rem 0.5rem; text-align: center;">No se encontraron cuentas. Podés crear una abajo.</div>`;
+      } else {
+        html += items.map((it) => {
+          const isSel = currentVal === it.id;
+          return `
+            <button type="button" class="picker-list-item ${isSel ? 'selected' : ''}" onclick="selectAccountPickerItem('${escHtml(it.id).replace(/'/g, "\\'")}')">
+              <span class="picker-trigger-label">
+                <span class="picker-dot ${dotClass}"></span>
+                <span>${escHtml(it.name)}</span>
+                <span class="text-xs text-muted" style="font-weight: 400;">· ${escHtml(it.badge)}</span>
+              </span>
+              ${isSel ? '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
+            </button>
+          `;
+        }).join('');
+      }
+      listEl.innerHTML = html;
+    }
+
+    function selectAccountPickerItem(val) {
+      if (!activePickerConfig) return;
+      const cfg = activePickerConfig;
+      if (cfg.targetId) {
+        setPickerFieldValue(cfg.targetId, cfg.mode, val, cfg.emptyLabel);
+      }
+      if (typeof cfg.onChange === 'function') {
+        cfg.onChange(val);
+      }
+      closeAccountPicker();
+    }
+
+    function toggleUapCreateForm() {
+      const form = document.getElementById('uap-create-form');
+      form.classList.toggle('hidden');
+      if (!form.classList.contains('hidden')) {
+        const searchVal = (document.getElementById('uap-search').value || '').trim();
+        const nameInput = document.getElementById('uap-create-name');
+        if (searchVal && !nameInput.value) nameInput.value = searchVal;
+        nameInput.focus();
+      }
+    }
+
+    function submitUapCreateAccount() {
+      if (!activePickerConfig) return;
+      const name = (document.getElementById('uap-create-name').value || '').trim();
+      if (!name) return;
+      let newId = name;
+      if (activePickerConfig.mode === 'EXPENSES') {
+        const existing = EXPENSE_CATEGORIES.find((c) => c.name.toLowerCase() === name.toLowerCase());
+        if (existing) {
+          newId = existing.id;
+        } else {
+          newId = 'exp_' + Date.now();
+          EXPENSE_CATEGORIES.push({ id: newId, name, isFinancial: true });
+        }
+      } else if (activePickerConfig.mode === 'INCOMES') {
+        if (!INCOME_CATEGORIES.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+          INCOME_CATEGORIES.push({ id: name, name });
+        }
+      } else {
+        if (!PAYMENT_ACCOUNTS.some((a) => a.name.toLowerCase() === name.toLowerCase())) {
+          PAYMENT_ACCOUNTS.push({ id: name, name, group: 'Banco' });
+        }
+      }
+      showToast(`"${name}" creada y seleccionada.`);
+      selectAccountPickerItem(newId);
+    }
+
+    function toggleAddColForm(ctx) {
+      const box = document.getElementById(ctx + '-add-col-form');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) {
+        setPickerFieldValue(ctx + '-new-col-exp', 'EXPENSES', 'exp_seg');
+        updateColRuleUI(ctx);
+      }
+    }
+
+    function applyColPreset(ctx, name, mode, val, refColId) {
+      document.getElementById(ctx + '-new-col-name').value = name;
+      document.getElementById(ctx + '-new-col-mode').value = mode;
+      let defaultExp = 'exp_int';
+      if (name.toLowerCase().includes('seguro')) defaultExp = 'exp_seg';
+      else if (name.toLowerCase().includes('iva')) defaultExp = 'exp_iva';
+      else if (name.toLowerCase().includes('gasto')) defaultExp = 'exp_adm';
+      setPickerFieldValue(ctx + '-new-col-exp', 'EXPENSES', defaultExp);
+      updateColRuleUI(ctx, refColId);
+      const fillInput = document.getElementById(ctx + '-new-col-fill');
+      fillInput.value = mode === 'FIXED' ? fmtNum(val) : String(val);
+    }
+
+    function updateColRuleUI(ctx, forcedRefId) {
+      const mode = document.getElementById(ctx + '-new-col-mode').value;
+      const lbl = document.getElementById(ctx + '-new-col-val-label');
+      const refSel = document.getElementById(ctx + '-new-col-ref');
+      const fillInput = document.getElementById(ctx + '-new-col-fill');
+
+      const cols = (ctx === 'wiz' ? customColumns : editDraft.columns).filter((c) => c.isActive !== false);
+      if (mode === 'PCT_COL') {
+        refSel.innerHTML = cols.map((c) => `<option value="${c.id}">s/ ${escHtml(c.name)}</option>`).join('');
+        if (forcedRefId && cols.some((c) => c.id === forcedRefId)) refSel.value = forcedRefId;
+        refSel.classList.remove('hidden');
+        fillInput.classList.remove('hidden');
+        lbl.textContent = 'Porcentaje (%) y columna base';
+      } else if (mode === 'ZERO') {
+        refSel.classList.add('hidden');
+        fillInput.classList.add('hidden');
+        lbl.textContent = 'Se agregará en 0 para editar a mano';
+      } else {
+        refSel.classList.add('hidden');
+        fillInput.classList.remove('hidden');
+        lbl.textContent = mode === 'FIXED' ? 'Monto fijo por cuota' : 'Porcentaje (%) sobre capital';
+      }
+    }
+
+    function onColFillInput(ctx, el) {
+      if (document.getElementById(ctx + '-new-col-mode').value === 'FIXED') {
+        formatThousandInput(el);
+      }
+    }
+
+    function addCustomColumn(ctx) {
+      const name = document.getElementById(ctx + '-new-col-name').value.trim() || 'Cargo Extra';
+      const expenseAccountId = document.getElementById(ctx + '-new-col-exp').value || 'exp_int';
+      const mode = document.getElementById(ctx + '-new-col-mode').value;
+      const rawVal = document.getElementById(ctx + '-new-col-fill').value;
+      const refColId = document.getElementById(ctx + '-new-col-ref').value || 'interest';
+      const val = mode === 'FIXED' ? parseNum(rawVal) : (parseFloat(String(rawVal).replace(',', '.')) || 0);
+      const id = 'col_' + Date.now();
+
+      if (ctx === 'wiz') {
+        customColumns.push({ id, name, expenseAccountId, isActive: true, locked: false, rule: mode, ruleVal: val, refColId });
+        let bal = wizardRows.reduce((s, r) => s + r.principal, 0);
+        wizardRows.forEach((r) => {
+          r.charges[id] = computeColAmount(mode, val, refColId, bal, r.charges);
+          bal = Math.max(0, bal - r.principal);
+        });
+        document.getElementById('wiz-add-col-form').classList.add('hidden');
+        renderWizardTable();
+      } else {
+        pushEditSnapshot();
+        editDraft.columns.push({ id, name, expenseAccountId, isActive: true, locked: false, rule: mode, ruleVal: val, refColId });
+        const pendingRows = editDraft.rows.filter((r) => getRowDerived(r, editDraft.columns).status !== 'PAID');
+        let bal = pendingRows.reduce((s, r) => s + getRowDerived(r, editDraft.columns).pendingPrincipal, 0);
+        editDraft.rows.forEach((r) => {
+          if (getRowDerived(r, editDraft.columns).status === 'PAID') {
+            r.charges[id] = null;
+          } else {
+            r.charges[id] = computeColAmount(mode, val, refColId, bal, r.charges);
+            bal = Math.max(0, bal - r.principal);
+          }
+        });
+        document.getElementById('edit-add-col-form').classList.add('hidden');
+        renderEditTable();
+        updateEditImpact();
+      }
+      showToast(`Columna "${name}" vinculada a "${getExpName(expenseAccountId)}".`);
+    }
+
+    function computeColAmount(mode, val, refColId, balBefore, chargesObj) {
+      if (mode === 'ZERO') return 0;
+      if (mode === 'FIXED') return Math.round(val);
+      if (mode === 'PCT_CAPITAL') return Math.round(balBefore * (val / 100));
+      if (mode === 'PCT_COL') return Math.round((Number(chargesObj[refColId]) || 0) * (val / 100));
+      return 0;
+    }
+
+    // =========================================================================
+    // VIEW 2: WIZARD NUEVO PRÉSTAMO
+    // =========================================================================
+    let wizardMode = 'ONGOING';
+    let wizardCurrency = 'PYG';
+    let customColumns = [
+      { id: 'interest', name: 'Interés', expenseAccountId: 'exp_int', isActive: true, locked: true, rule: 'CALC', ruleVal: 0, refColId: '' },
+    ];
+    let wizardRows = [];
+
+    function updateWizLiabilityPreview() {
+      const rawName = (document.getElementById('wiz-name').value || '').trim() || 'Nuevo Préstamo';
+      const cur = document.getElementById('wiz-currency').value || 'PYG';
+      const hint = document.getElementById('wiz-liability-hint');
+      const collides = EXISTING_ACCOUNT_NAMES.some((n) => n.toLowerCase() === rawName.toLowerCase());
+      if (collides) {
+        hint.innerHTML = `<span style="color: hsl(var(--amber-text)); font-weight: 600;">Ya existe una cuenta "${escHtml(rawName)}":</span> se creará como «${escHtml(rawName)} (2)» en ${cur} (Control · Préstamos).`;
+      } else {
+        hint.textContent = `Se creará la cuenta de Pasivo «${rawName}» en ${cur} (Control · Préstamos).`;
+      }
+    }
+
+    function onWizCurrencyChange() {
+      wizardCurrency = document.getElementById('wiz-currency').value || 'PYG';
+      document.getElementById('wiz-principal-label').textContent = `Monto del préstamo (${getCurrencySymbol(wizardCurrency)})`;
+      updateWizLiabilityPreview();
+      renderWizardTable();
+    }
+
+    function syncWizStartSelect() {
+      const sel = document.getElementById('wiz-start-inst');
+      const term = Math.max(1, Math.min(240, Number(document.getElementById('wiz-term').value) || 24));
+      const prevVal = Number(sel.value) || 13;
+      const targetVal = Math.min(prevVal, term);
+      const opts = [];
+      for (let i = 1; i <= term; i++) {
+        const suffix = i === 1 ? ' (todas)' : ` (1 a ${i - 1} ya pagadas)`;
+        opts.push(`<option value="${i}" ${i === targetVal ? 'selected' : ''}>Cuota ${i} de ${term}${suffix}</option>`);
+      }
+      sel.innerHTML = opts.join('');
+    }
+
+    function setWizardMode(mode) {
+      wizardMode = mode;
+      document.getElementById('mode-new').classList.toggle('selected', mode === 'NEW');
+      document.getElementById('mode-ongoing').classList.toggle('selected', mode === 'ONGOING');
+      document.getElementById('wiz-new-panel').classList.toggle('hidden', mode !== 'NEW');
+      document.getElementById('wiz-ongoing-panel').classList.toggle('hidden', mode !== 'ONGOING');
+      recalcWizardGrid();
+    }
+
+    function removeWizColumn(id) {
+      customColumns = customColumns.filter((c) => c.id !== id);
+      renderWizardTable();
+    }
+
+    function changeWizColExpense(colId, expId) {
+      const col = customColumns.find((c) => c.id === colId);
+      if (col) col.expenseAccountId = expId;
+    }
+
+    function recalcWizardGrid() {
+      const P = parseNum(document.getElementById('wiz-principal').value) || 60000000;
+      const annualRate = parseFloat(document.getElementById('wiz-rate').value) || 13.5;
+      const n = Math.max(1, Math.min(240, Number(document.getElementById('wiz-term').value) || 24));
+      const startNum = wizardMode === 'ONGOING' ? Number(document.getElementById('wiz-start-inst').value) || 1 : 1;
+      const baseDate = new Date((document.getElementById('wiz-date').value || '2025-11-15') + 'T00:00:00');
+
+      const r = annualRate / 100 / 12;
+      const pmt = r > 0 ? (P * r) / (1 - Math.pow(1 + r, -n)) : P / n;
+
+      let balance = P;
+      const allRows = [];
+      for (let i = 1; i <= n; i++) {
+        const interest = Math.round(balance * r);
+        const principal = i === n ? Math.round(balance) : Math.max(1, Math.round(pmt - interest));
+        const balBefore = balance;
+        balance = Math.max(0, balance - principal);
+        const d = new Date(baseDate);
+        d.setMonth(d.getMonth() + (i - 1));
+        const dueDate = d.toISOString().slice(0, 10);
+
+        const charges = { interest };
+        customColumns.forEach((col) => {
+          if (col.id !== 'interest') {
+            charges[col.id] = computeColAmount(col.rule, col.ruleVal, col.refColId, balBefore, charges);
+          }
+        });
+        allRows.push({ num: i, dueDate, principal, charges });
+      }
+
+      wizardRows = allRows.filter((row) => row.num >= startNum);
+      document.getElementById('wiz-range-label').textContent =
+        `(Cuotas ${startNum} a ${n} · ${wizardRows.length} cuotas visibles)`;
+      renderWizardTable();
+    }
+
+    function renderWizardTable() {
+      const thead = document.getElementById('wizard-thead');
+      const tbody = document.getElementById('wizard-tbody');
+      const tfoot = document.getElementById('wizard-tfoot');
+
+      thead.innerHTML = `
+        <tr>
+          <th class="text-left">Cuota</th>
+          <th class="text-left">Vencimiento</th>
+          <th class="text-right">
+            <div>Capital</div>
+            <div style="font-size: 0.65rem; font-weight: 500; text-transform: none;">→ Pasivo Préstamo</div>
+          </th>
+          ${customColumns.map((col) => `
+            <th class="text-right">
+              <div>
+                ${escHtml(col.name)}
+                ${!col.locked ? `<button type="button" class="col-remove-btn" onclick="removeWizColumn('${col.id}')" title="Quitar columna"><svg style="width:0.75rem;height:0.75rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>` : ''}
+              </div>
+              <button type="button" class="col-cat-pill col-cat-pill-editable" title="Cambiar categoría de gasto" onclick="openAccountPicker({ mode: 'EXPENSES', currentValue: '${col.expenseAccountId}', title: 'Categoría para ${escHtml(col.name).replace(/'/g, "\\'")}', onChange: (val) => { changeWizColExpense('${col.id}', val); renderWizardTable(); } })">
+                <span>→ ${escHtml(getExpName(col.expenseAccountId))}</span>
+                <svg style="width:0.65rem;height:0.65rem;flex-shrink:0;opacity:0.65;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+            </th>
+          `).join('')}
+          <th class="text-right">Total cuota</th>
+        </tr>
+      `;
+
+      tbody.innerHTML = wizardRows.map((row, idx) => {
+        const total = row.principal + rowChargesSum(row, customColumns);
+        return `
+          <tr>
+            <td class="text-left font-semibold tabular-nums">#${row.num}</td>
+            <td class="text-left"><input class="input-cell input-cell-date tabular-nums" type="date" value="${row.dueDate}" onchange="wizardRows[${idx}].dueDate=this.value" /></td>
+            <td class="text-right"><input class="input-cell tabular-nums text-right" inputmode="numeric" value="${fmtNum(row.principal)}" oninput="formatThousandInput(this); updateWizCell(${idx}, 'principal', this.value)" /></td>
+            ${customColumns.map((col) => `
+              <td class="text-right"><input class="input-cell tabular-nums text-right" inputmode="numeric" value="${fmtNum(row.charges[col.id] || 0)}" oninput="formatThousandInput(this); updateWizCell(${idx}, '${col.id}', this.value)" /></td>
+            `).join('')}
+            <td class="text-right font-bold tabular-nums" id="wiz-row-total-${idx}">${fmt(total, wizardCurrency)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      updateWizTotals(tfoot);
+    }
+
+    function updateWizCell(idx, key, formattedVal) {
+      const num = parseNum(formattedVal);
+      if (key === 'principal') wizardRows[idx].principal = num;
+      else wizardRows[idx].charges[key] = num;
+
+      const row = wizardRows[idx];
+      const cell = document.getElementById('wiz-row-total-' + idx);
+      if (cell) cell.textContent = fmt(row.principal + rowChargesSum(row, customColumns), wizardCurrency);
+      updateWizTotals(document.getElementById('wizard-tfoot'));
+    }
+
+    function updateWizTotals(tfoot) {
+      const totalCap = wizardRows.reduce((s, r) => s + (Number(r.principal) || 0), 0);
+      const colSums = customColumns.map((c) => wizardRows.reduce((s, r) => s + (Number(r.charges[c.id]) || 0), 0));
+      const grandTotal = totalCap + colSums.reduce((a, b) => a + b, 0);
+
+      document.getElementById('wiz-total-capital').textContent = fmt(totalCap, wizardCurrency);
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="2" class="text-left">Totales (${wizardRows.length} cuotas)</td>
+          <td class="text-right tabular-nums">${fmt(totalCap, wizardCurrency)}</td>
+          ${colSums.map((sum) => `<td class="text-right tabular-nums">${fmt(sum, wizardCurrency)}</td>`).join('')}
+          <td class="text-right tabular-nums">${fmt(grandTotal, wizardCurrency)}</td>
+        </tr>
+      `;
+    }
+
+    function confirmWizard() {
+      const hasInvalidPrincipal = wizardRows.some((r) => (Number(r.principal) || 0) <= 0);
+      if (hasInvalidPrincipal) {
+        showToast('Todas las cuotas deben tener Capital mayor a 0.');
+        return;
+      }
+      showToast('Préstamo y cuenta de Pasivo guardados.');
+      switchView('list');
+    }
+
+    // =========================================================================
+    // VIEW 1 + VIEW 3 RENDERING (Synced with primaryLoan live data!)
+    // =========================================================================
+    let detailFilter = 'PENDING';
+
+    function filterDetailRows(filter, btn) {
+      detailFilter = filter;
+      btn.parentElement.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderDetailView();
+    }
+
+    function renderAllLoanViews() {
+      renderListLoan1();
+      renderDetailView();
+    }
+
+    function renderListLoan1() {
+      const st = computeLoanStats(primaryLoan);
+      primaryLoan.status = st.derivedLoanStatus;
+      const loan2PendingCap = 12500000;
+      const loan2PendCount = 9;
+      const loan2PaidCount = 3;
+      const loan2NextAmt = 1250000;
+
+      const isCancelled = primaryLoan.status === 'CANCELLED';
+      const activeLoansCount = (primaryLoan.status === 'ACTIVE' ? 1 : 0) + 1;
+      const settledLoansCount = primaryLoan.status === 'SETTLED' ? 1 : 0;
+      const totalLoansCount = (isCancelled ? 0 : 1) + 1;
+
+      document.getElementById('filter-btn-ALL').textContent = `Todos (${totalLoansCount})`;
+      document.getElementById('filter-btn-ACTIVE').textContent = `Activos (${activeLoansCount})`;
+      document.getElementById('filter-btn-SETTLED').textContent = `Saldados (${settledLoansCount})`;
+
+      // Update Top KPIs
+      document.getElementById('list-kpi-cap').textContent = fmt(st.pendingCap + loan2PendingCap);
+      const next1Amt = st.nextRow ? getRowDerived(st.nextRow, primaryLoan.columns).pendingTotal : 0;
+      document.getElementById('list-kpi-next-badge').textContent = st.nextRow ? fmtBadgeDate(st.nextRow.dueDate) : 'Saldado';
+      document.getElementById('list-kpi-next-val').textContent = st.nextRow ? fmt(next1Amt) : fmt(0);
+      document.getElementById('list-kpi-next-sub').textContent = st.nextRow
+        ? `${primaryLoan.name} · #${st.nextRow.num}`
+        : `${primaryLoan.name} · Al día`;
+      document.getElementById('list-kpi-monthly').textContent = fmt(next1Amt + loan2NextAmt);
+      document.getElementById('list-kpi-counts').textContent = `${st.pendRows.length + loan2PendCount} cuotas`;
+      document.getElementById('list-kpi-counts-sub').textContent =
+        `Pendientes de pago (${st.paidRows.length + loan2PaidCount} pagadas)`;
+
+      // Render Loan 1 Card with Dynamic Columns Preview
+      const card = document.getElementById('loan1-card');
+      if (isCancelled) {
+        card.classList.add('hidden');
+        card.setAttribute('data-status', 'CANCELLED');
+      } else {
+        card.setAttribute('data-status', primaryLoan.status);
+        card.setAttribute('data-name', primaryLoan.name.toLowerCase());
+      }
+      const activeCols = primaryLoan.columns.filter((c) => c.isActive !== false);
+      const previewRows = st.pendRows.slice(0, 2);
+      const nextDerived = st.nextRow ? getRowDerived(st.nextRow, primaryLoan.columns) : null;
+      const statusBadge = st.nextRow
+        ? (nextDerived.isOverdue
+            ? `<span class="badge badge-rose">Vencida ${fmtBadgeDate(st.nextRow.dueDate)}</span>`
+            : `<span class="badge badge-amber">Vence ${fmtBadgeDate(st.nextRow.dueDate)}</span>`)
+        : `<span class="badge badge-emerald">Saldado</span>`;
+
+      card.innerHTML = `
+        <div class="loan-card-header">
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.45rem;">
+            <div class="flex-row">
+              ${statusBadge}
+              <span class="badge badge-neutral">${escHtml(primaryLoan.currency)}</span>
+              <span class="text-xs text-muted">Tasa ${String(primaryLoan.annualRate).replace('.', ',')}%</span>
+            </div>
+
+            <div class="flex-row" style="gap: 0.625rem;">
+              <button onclick="switchView('detail')" style="border:none;background:transparent;padding:0;font-size:1.0625rem;font-weight:700;color:hsl(var(--foreground));cursor:pointer;text-align:left;">
+                ${escHtml(primaryLoan.name)}
+              </button>
+            </div>
+
+            <div class="flex-row" style="gap: 0.75rem;">
+              <div class="progress-track progress-track-card" style="flex: 1;">
+                <div class="progress-fill progress-fill-emerald" style="width: ${st.pctCapPaid}%;"></div>
+              </div>
+              <span class="text-xs font-semibold text-muted tabular-nums">${st.paidRows.length} pagadas · ${st.pendRows.length} pendientes (${st.pctCapPaid}%)</span>
+            </div>
+          </div>
+
+          <div class="flex-row" style="justify-content: space-between; gap: 1.25rem;">
+            <div style="text-align: right;">
+              <div class="text-xs text-muted">Capital pendiente</div>
+              <div class="font-bold tabular-nums" style="font-size: 1.125rem;">${fmt(st.pendingCap)}</div>
+              <div class="text-xs text-muted tabular-nums">de ${fmt(primaryLoan.originalPrincipal)}</div>
+            </div>
+
+            <div class="flex-row" style="gap: 0.5rem;">
+              <button class="btn btn-secondary" onclick="switchView('detail')">Ver detalle</button>
+              ${st.nextRow ? `
+                <button class="btn btn-gradient" onclick="openPayLoan1Modal(${st.nextRow.num})">
+                  <svg class="icon" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                  <span>Pagar #${st.nextRow.num}</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div class="loan-card-preview">
+          <div class="flex-between" style="margin-bottom: 0.5rem;">
+            <span class="text-xs font-bold text-muted">Próximas cuotas</span>
+            <button class="btn btn-ghost btn-sm" onclick="switchView('detail')" style="padding-right: 0;">Ver las ${primaryLoan.rows.length} cuotas →</button>
+          </div>
+          ${previewRows.length === 0 ? `
+            <div class="text-xs text-emerald font-semibold">Todas las cuotas de este préstamo ya están pagadas.</div>
+          ` : `
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="text-left">Cuota</th>
+                    <th class="text-left">Vencimiento</th>
+                    <th class="text-right">Capital pend.</th>
+                    ${activeCols.map((c) => `<th class="text-right">${escHtml(c.name)}</th>`).join('')}
+                    <th class="text-right">Saldo cuota</th>
+                    <th class="text-right"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${previewRows.map((r, i) => {
+                    const d = getRowDerived(r, primaryLoan.columns);
+                    return `
+                      <tr>
+                        <td class="text-left font-semibold tabular-nums">#${r.num} ${d.status === 'PARTIAL' ? '<span class="badge badge-amber" style="font-size:0.65rem; margin-left:0.25rem;">Parcial</span>' : ''}</td>
+                        <td class="text-left tabular-nums">${fmtShortDate(r.dueDate)}</td>
+                        <td class="text-right tabular-nums">${fmt(d.pendingPrincipal)}</td>
+                        ${activeCols.map((c) => `<td class="text-right tabular-nums">${fmt(d.pendingCharges[c.id] || 0)}</td>`).join('')}
+                        <td class="text-right font-bold tabular-nums">${fmt(d.pendingTotal)}</td>
+                        <td class="text-right"><button class="btn ${i === 0 ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="openPayLoan1Modal(${r.num})">${d.status === 'PARTIAL' ? 'Pagar resto' : 'Pagar'}</button></td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          `}
+        </div>
+      `;
+
+      // Update Agenda Tab
+      const agendaBody = document.getElementById('agenda-tbody');
+      const agendaItems = [];
+      if (!isCancelled) {
+        st.pendRows.slice(0, 3).forEach((r) => {
+          const d = getRowDerived(r, primaryLoan.columns);
+          const intr = d.pendingCharges.interest || 0;
+          const others = d.pendingTotal - d.pendingPrincipal - intr;
+          agendaItems.push({
+            dueDate: r.dueDate,
+            loanName: primaryLoan.name,
+            num: r.num,
+            totalCount: primaryLoan.rows.length,
+            cap: d.pendingPrincipal,
+            intr,
+            others,
+            total: d.pendingTotal,
+            payFn: `openPayLoan1Modal(${r.num})`,
+          });
+        });
+      }
+      agendaItems.push({
+        dueDate: '2026-11-20',
+        loanName: 'Crédito Capital Operativo',
+        num: 4,
+        totalCount: 12,
+        cap: 1095000,
+        intr: 155000,
+        others: 0,
+        total: 1250000,
+        payFn: `openPayModal({ source: 'loan2', num: 4, title: 'Crédito Capital Operativo', cap: 1095000, charges: [{ id: 'interest', name: 'Interés', val: 155000 }] })`,
+      });
+      agendaItems.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+      agendaBody.innerHTML = agendaItems.map((it, i) => `
+        <tr>
+          <td class="text-left tabular-nums font-semibold">${fmtShortDate(it.dueDate)}</td>
+          <td class="text-left">${escHtml(it.loanName)}</td>
+          <td class="text-left tabular-nums">#${it.num} de ${it.totalCount}</td>
+          <td class="text-right tabular-nums">${fmt(it.cap)}</td>
+          <td class="text-right tabular-nums">${fmt(it.intr)}</td>
+          <td class="text-right tabular-nums ${it.others === 0 ? 'text-muted' : ''}">${it.others === 0 ? '—' : fmt(it.others)}</td>
+          <td class="text-right font-bold tabular-nums">${fmt(it.total)}</td>
+          <td class="text-right"><button class="btn ${i === 0 ? 'btn-gradient' : 'btn-secondary'} btn-sm" onclick="${it.payFn}">Pagar</button></td>
+        </tr>
+      `).join('');
+      applyListFilters();
+    }
+
+    function renderDetailView() {
+      const st = computeLoanStats(primaryLoan);
+      primaryLoan.status = st.derivedLoanStatus;
+      document.getElementById('det-title').textContent = primaryLoan.name;
+      const stBadge = document.getElementById('det-status-badge');
+      if (primaryLoan.status === 'SETTLED') {
+        stBadge.textContent = 'Saldado';
+        stBadge.className = 'badge badge-emerald';
+      } else if (primaryLoan.status === 'CANCELLED') {
+        stBadge.textContent = 'Anulado';
+        stBadge.className = 'badge badge-rose';
+      } else {
+        stBadge.textContent = 'Activo';
+        stBadge.className = 'badge badge-emerald';
+      }
+      document.getElementById('det-currency-badge').textContent = primaryLoan.currency;
+      document.getElementById('det-next-badge').textContent = st.nextRow ? `Vence ${fmtBadgeDate(st.nextRow.dueDate)}` : 'Saldado';
+      document.getElementById('det-subtitle').textContent =
+        `Tasa ${String(primaryLoan.annualRate).replace('.', ',')}% · Apertura ${fmtShortDate(primaryLoan.openingDate)} · ${primaryLoan.rows.length} cuotas totales`;
+      document.getElementById('det-liability-name').textContent = `${primaryLoan.name} (${primaryLoan.currency})`;
+      document.getElementById('det-account-name').textContent = primaryLoan.bankAccount || 'Elegir al pagar';
+
+      const payBtn = document.getElementById('det-pay-next-btn');
+      if (st.nextRow && primaryLoan.status !== 'CANCELLED') {
+        payBtn.classList.remove('hidden');
+        payBtn.querySelector('span').textContent = `Pagar cuota #${st.nextRow.num}`;
+      } else {
+        payBtn.classList.add('hidden');
+      }
+
+      // 4 Detail KPIs
+      document.getElementById('det-kpi-pending-cap').textContent = fmt(st.pendingCap);
+      document.getElementById('det-kpi-pending-sub').textContent = `De ${fmt(primaryLoan.originalPrincipal)} solicitados`;
+
+      document.getElementById('det-kpi-pct-badge').textContent = `${st.pctCapPaid}% pagado`;
+      document.getElementById('det-kpi-total-paid').textContent = fmt(st.totalPaid);
+      document.getElementById('det-kpi-green-bar').style.width = `${st.pctCapPaid}%`;
+      document.getElementById('det-kpi-paid-breakdown').textContent =
+        `${fmt(st.paidCap)} capital · ${fmt(st.paidCharges)} intereses y cargos`;
+
+      document.getElementById('det-kpi-installments').textContent = `${st.paidRows.length} / ${primaryLoan.rows.length}`;
+      document.getElementById('det-kpi-installments-sub').textContent =
+        `${st.paidRows.length} pagadas · ${st.pendRows.length} pendientes`;
+
+      if (st.nextRow) {
+        const nextD = getRowDerived(st.nextRow, primaryLoan.columns);
+        document.getElementById('det-kpi-due-badge').textContent = fmtBadgeDate(st.nextRow.dueDate);
+        document.getElementById('det-kpi-next-amount').textContent = fmt(nextD.pendingTotal);
+        document.getElementById('det-kpi-next-sub').textContent = `${fmtShortDate(st.nextRow.dueDate)} · Cuota #${st.nextRow.num}`;
+      } else {
+        document.getElementById('det-kpi-due-badge').textContent = 'Completo';
+        document.getElementById('det-kpi-next-amount').textContent = fmt(0);
+        document.getElementById('det-kpi-next-sub').textContent = 'No quedan cuotas pendientes';
+      }
+
+      // Filter segmented pills counts
+      document.getElementById('det-filter-all').textContent = `Todas (${primaryLoan.rows.length})`;
+      document.getElementById('det-filter-pending').textContent = `Pendientes (${st.pendRows.length})`;
+      document.getElementById('det-filter-paid').textContent = `Pagadas (${st.paidRows.length})`;
+
+      const visibleCols = primaryLoan.columns.filter((c) => c.isActive !== false || colHasAllocations(primaryLoan, c.id));
+      const thead = document.getElementById('detail-thead');
+      const tbody = document.getElementById('detail-tbody');
+      const tfoot = document.getElementById('detail-tfoot');
+
+      thead.innerHTML = `
+        <tr>
+          <th class="text-left">Cuota</th>
+          <th class="text-left">Estado</th>
+          <th class="text-left">Vencimiento / Pagos</th>
+          <th class="text-right">Capital</th>
+          ${visibleCols.map((c) => `<th class="text-right">${escHtml(c.name)}<div style="font-size:0.62rem; font-weight:500; text-transform:none;">${escHtml(getExpName(c.expenseAccountId))}${c.isActive === false ? ' (archivada)' : ''}</div></th>`).join('')}
+          <th class="text-right">Total cuota</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      `;
+
+      const visible = primaryLoan.rows.filter((r) => {
+        const d = getRowDerived(r, primaryLoan.columns);
+        if (detailFilter === 'ALL') return true;
+        if (detailFilter === 'PAID') return d.status === 'PAID';
+        return d.status !== 'PAID';
+      });
+
+      tbody.innerHTML = visible.map((r) => {
+        const d = getRowDerived(r, primaryLoan.columns);
+        const isPaid = d.status === 'PAID';
+        const isPartial = d.status === 'PARTIAL';
+        const allocs = r.allocations || [];
+        const total = rowTotal(r, visibleCols);
+
+        let statusHtml = '<span class="badge badge-amber">Pendiente</span>';
+        if (isPaid) statusHtml = '<span class="badge badge-emerald">Pagada</span>';
+        else if (isPartial && d.isOverdue) statusHtml = '<span class="badge badge-rose">Parcial · Vencida</span>';
+        else if (isPartial) statusHtml = '<span class="badge badge-amber">Parcial</span>';
+        else if (d.isOverdue) statusHtml = '<span class="badge badge-rose">Vencida</span>';
+
+        const lastAlloc = allocs[allocs.length - 1];
+        const dateCellHtml = isPaid
+          ? `${fmtShortDate(lastAlloc?.paidAt || r.dueDate)} <span class="text-xs text-muted">· ${escHtml(lastAlloc?.paidAccount || primaryLoan.bankAccount)}</span>`
+          : isPartial
+            ? `${fmtShortDate(r.dueDate)}<div class="text-xs text-muted">${allocs.length} abono(s) · falta ${fmt(d.pendingPrincipal)} cap.</div>`
+            : fmtShortDate(r.dueDate);
+
+        return `
+          <tr class="${isPaid ? 'row-paid' : ''}">
+            <td class="text-left font-semibold tabular-nums">#${r.num}</td>
+            <td class="text-left">${statusHtml}</td>
+            <td class="text-left tabular-nums">${dateCellHtml}</td>
+            <td class="text-right tabular-nums">
+              ${fmt(r.principal)}
+              ${isPartial ? `<div class="text-xs text-muted">Pagado ${fmt(d.paidPrincipal)}</div>` : ''}
+            </td>
+            ${visibleCols.map((c) => {
+              const v = r.charges[c.id];
+              return `<td class="text-right tabular-nums">${v === null || v === undefined ? '<span class="text-muted">—</span>' : fmt(v)}</td>`;
+            }).join('')}
+            <td class="text-right font-bold tabular-nums">${fmt(total)}</td>
+            <td class="text-right">
+              <div style="display:flex; gap:0.35rem; justify-content:flex-end;">
+                ${!isPaid ? `
+                  <button type="button" class="btn ${st.nextRow && st.nextRow.num === r.num ? 'btn-gradient' : 'btn-secondary'} btn-sm" onclick="openPayLoan1Modal(${r.num})">
+                    ${isPartial ? 'Pagar resto' : 'Pagar'}
+                  </button>
+                ` : ''}
+                ${allocs.length > 0 ? `
+                  <button type="button" class="btn btn-danger-outline btn-sm" onclick="openRevertModal(${r.num})">
+                    Revertir${allocs.length > 1 ? ` (${allocs.length})` : ''}
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const sumCap = visible.reduce((s, r) => s + r.principal, 0);
+      const colSums = visibleCols.map((c) => visible.reduce((s, r) => s + (Number(r.charges[c.id]) || 0), 0));
+      const grandTotal = sumCap + colSums.reduce((a, b) => a + b, 0);
+
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="3" class="text-left">Totales visibles (${visible.length} cuotas)</td>
+          <td class="text-right tabular-nums">${fmt(sumCap)}</td>
+          ${colSums.map((sum) => `<td class="text-right tabular-nums">${fmt(sum)}</td>`).join('')}
+          <td class="text-right tabular-nums">${fmt(grandTotal)}</td>
+          <td></td>
+        </tr>
+      `;
+    }
+
+    function payNextFromDetail() {
+      const st = computeLoanStats(primaryLoan);
+      if (st.nextRow) openPayLoan1Modal(st.nextRow.num);
+    }
+
+    // =========================================================================
+    // VIEW 4: EDITAR PRÉSTAMO (Centralized Loan Modification Form)
+    // =========================================================================
+    let editInitialized = false;
+    let editRowFilter = 'PENDING';
+    let editDraft = null;
+    let editHistoryStack = [];
+    let baselineMetrics = null;
+
+    function openEditLoan() {
+      initEditDraftFromLoan();
+      switchView('edit');
+    }
+
+    function initEditDraftFromLoan() {
+      editInitialized = true;
+      editHistoryStack = [];
+      editDraft = JSON.parse(JSON.stringify(primaryLoan));
+      const st = computeLoanStats(primaryLoan);
+
+      baselineMetrics = {
+        pendingCap: st.pendingCap,
+        avgPmt: st.pendRows.length ? Math.round(st.pendRows.reduce((s, r) => s + getRowDerived(r, primaryLoan.columns).pendingTotal, 0) / st.pendRows.length) : 0,
+        totalInterest: st.pendRows.reduce((s, r) => s + (getRowDerived(r, primaryLoan.columns).pendingCharges.interest || 0), 0),
+        pendCount: st.pendRows.length,
+        paidCount: st.paidRows.length,
+      };
+
+      document.getElementById('edit-back-label').textContent = `Volver a ${primaryLoan.name}`;
+      document.getElementById('edit-paid-lock-badge').textContent = `${st.paidRows.length} cuotas pagadas protegidas`;
+      document.getElementById('edit-name').value = editDraft.name;
+      syncEditLiabilityPreview();
+      setPickerFieldValue('edit-bank-acc', 'PAYMENT_ACCOUNTS', editDraft.bankAccount || '', 'Elegir al momento de pagar');
+      document.getElementById('edit-orig-principal').value = fmtNum(editDraft.originalPrincipal);
+      document.getElementById('edit-orig-hint').textContent = `Ya se amortizaron ${fmt(st.paidCap)} en ${st.paidRows.length} cuotas.`;
+      document.getElementById('edit-pending-cap').value = fmtNum(st.pendingCap);
+      document.getElementById('edit-rate').value = String(editDraft.annualRate);
+      document.getElementById('edit-pending-count').value = String(st.pendRows.length || 1);
+      document.getElementById('edit-next-date').value = st.nextRow ? st.nextRow.dueDate : '2026-11-15';
+
+      document.getElementById('edit-undo-btn').classList.add('hidden');
+      document.getElementById('edit-add-col-form').classList.add('hidden');
+      updateEditRangeHint();
+      renderEditTable();
+      updateEditImpact();
+    }
+
+    function syncEditLiabilityPreview() {
+      const name = (document.getElementById('edit-name')?.value || editDraft?.name || '').trim();
+      const cur = editDraft?.currency || 'PYG';
+      const el = document.getElementById('edit-liability-acc');
+      if (el) el.value = `${name || 'Préstamo'} (${cur})`;
+    }
+
+    function pushEditSnapshot() {
+      editHistoryStack.push(JSON.parse(JSON.stringify({
+        columns: editDraft.columns,
+        rows: editDraft.rows,
+        pendingCapStr: document.getElementById('edit-pending-cap').value,
+        rateStr: document.getElementById('edit-rate').value,
+        countStr: document.getElementById('edit-pending-count').value,
+        dateStr: document.getElementById('edit-next-date').value,
+      })));
+      document.getElementById('edit-undo-btn').classList.remove('hidden');
+    }
+
+    function resetEditToDefault() {
+      initEditDraftFromLoan();
+      document.getElementById('edit-lever-status').textContent =
+        'Editá las condiciones arriba y presioná "Recalcular plan de pagos", o ajustá celdas directamente abajo.';
+      showToast('Se restauró el plan como estaba al inicio.');
+    }
+
+    function onEditLeverInput() {
+      updateEditRangeHint();
+      const targetCap = parseNum(document.getElementById('edit-pending-cap').value);
+      const rate = parseFloat(document.getElementById('edit-rate').value) || 0;
+      const count = Math.max(1, Math.min(240, Number(document.getElementById('edit-pending-count').value) || 1));
+
+      const statusEl = document.getElementById('edit-lever-status');
+      const pendRows = editDraft.rows.filter((r) => getRowDerived(r, editDraft.columns).status !== 'PAID');
+      const currentTableCap = pendRows.reduce((s, r) => s + getRowDerived(r, editDraft.columns).pendingPrincipal, 0);
+      const currentPendLen = pendRows.length;
+
+      if (targetCap !== currentTableCap || rate !== editDraft.annualRate || count !== currentPendLen) {
+        document.getElementById('edit-undo-btn').classList.remove('hidden');
+        statusEl.innerHTML = `<strong style="color: hsl(var(--brand-vivid));">Modificaste las condiciones arriba.</strong> Presioná <em>"Recalcular plan de pagos"</em> para actualizar la tabla de plan de pagos conforme a las modificaciones.`;
+      } else {
+        statusEl.textContent = 'Editá las condiciones arriba y presioná "Recalcular plan de pagos", o ajustá celdas directamente abajo.';
+      }
+    }
+
+    function updateEditRangeHint() {
+      const paidCount = editDraft.rows.filter((r) => getRowDerived(r, editDraft.columns).status === 'PAID').length;
+      const pendCount = Math.max(1, Math.min(240, Number(document.getElementById('edit-pending-count').value) || 1));
+      const firstPend = paidCount + 1;
+      const lastPend = paidCount + pendCount;
+      document.getElementById('edit-range-hint').textContent = `Abarca cuotas #${firstPend} a #${lastPend}.`;
+    }
+
+    function recalcEditPendingRows() {
+      pushEditSnapshot();
+
+      const paidRows = editDraft.rows.filter((r) => getRowDerived(r, editDraft.columns).status === 'PAID');
+      const targetCap = Math.max(1, parseNum(document.getElementById('edit-pending-cap').value));
+      const newRate = Math.max(0, parseFloat(String(document.getElementById('edit-rate').value).replace(',', '.')) || 0);
+      const newPendCount = Math.max(1, Math.min(240, Number(document.getElementById('edit-pending-count').value) || 1));
+      const nextDate = new Date((document.getElementById('edit-next-date').value || '2026-11-15') + 'T00:00:00');
+
+      editDraft.annualRate = newRate;
+      const r = newRate / 100 / 12;
+      const pmt = r > 0 ? (targetCap * r) / (1 - Math.pow(1 + r, -newPendCount)) : targetCap / newPendCount;
+
+      let bal = targetCap;
+      const nextStartNum = (paidRows.length ? paidRows[paidRows.length - 1].num : 0) + 1;
+      const newPendingRows = [];
+
+      for (let i = 0; i < newPendCount; i++) {
+        const intr = Math.round(bal * r);
+        const cap = i === newPendCount - 1 ? Math.round(bal) : Math.max(1, Math.round(pmt - intr));
+        const balBefore = bal;
+        bal = Math.max(0, bal - cap);
+        const d = new Date(nextDate);
+        d.setMonth(d.getMonth() + i);
+        const dueDate = d.toISOString().slice(0, 10);
+
+        const charges = { interest: intr };
+        editDraft.columns.forEach((col) => {
+          if (col.id !== 'interest' && col.isActive !== false) {
+            charges[col.id] = computeColAmount(col.rule, col.ruleVal, col.refColId, balBefore, charges);
+          }
+        });
+
+        newPendingRows.push({
+          num: nextStartNum + i,
+          dueDate,
+          principal: cap,
+          charges,
+          allocations: [],
+        });
+      }
+
+      editDraft.rows = [...paidRows, ...newPendingRows];
+      document.getElementById('edit-lever-status').innerHTML =
+        `<span class="text-emerald font-semibold">Borrador recalculado (${newPendCount} cuotas pendientes).</span> Revisá la tabla o deshacelo si querés volver atrás.`;
+
+      renderEditTable();
+      updateEditImpact();
+      showToast('Cuotas pendientes recalculadas en el borrador.');
+    }
+
+    function setEditRowFilter(filter, btn) {
+      editRowFilter = filter;
+      btn.parentElement.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderEditTable();
+    }
+
+    function changeEditColExpense(colId, expId) {
+      const col = editDraft.columns.find((c) => c.id === colId);
+      if (!col) return;
+      if (colHasAllocations(editDraft, colId)) {
+        showToast('Esta columna ya tiene pagos imputados; no se puede cambiar su categoría.');
+        renderEditTable();
+        return;
+      }
+      col.expenseAccountId = expId;
+    }
+
+    function removeEditColumn(colId) {
+      pushEditSnapshot();
+      const col = editDraft.columns.find((c) => c.id === colId);
+      if (!col) return;
+      if (colHasAllocations(editDraft, colId)) {
+        col.isActive = false;
+        editDraft.rows.forEach((r) => {
+          if (getRowDerived(r, editDraft.columns).status !== 'PAID') {
+            r.charges[colId] = 0;
+          }
+        });
+        showToast(`Columna "${col.name}" archivada hacia adelante (historial PAID intacto).`);
+      } else {
+        editDraft.columns = editDraft.columns.filter((c) => c.id !== colId);
+        showToast('Columna eliminada (sin pagos históricos).');
+      }
+      renderEditTable();
+      updateEditImpact();
+    }
+
+    function renderEditTable() {
+      const thead = document.getElementById('edit-thead');
+      const tbody = document.getElementById('edit-tbody');
+      const tfoot = document.getElementById('edit-tfoot');
+
+      const pendRows = editDraft.rows.filter((r) => getRowDerived(r, editDraft.columns).status !== 'PAID');
+      const visible = editDraft.rows.filter((r) => editRowFilter === 'ALL' || getRowDerived(r, editDraft.columns).status !== 'PAID');
+      const visibleCols = editDraft.columns.filter((c) => c.isActive !== false || (editRowFilter === 'ALL' && colHasAllocations(editDraft, c.id)));
+
+      document.getElementById('edit-table-count-label').textContent =
+        `(${pendRows.length} cuotas pendientes${editRowFilter === 'ALL' ? ` · ${editDraft.rows.length} totales` : ''})`;
+
+      thead.innerHTML = `
+        <tr>
+          <th class="text-left">Cuota</th>
+          ${editRowFilter === 'ALL' ? '<th class="text-left">Estado</th>' : ''}
+          <th class="text-left">Vencimiento</th>
+          <th class="text-right">Capital</th>
+          ${visibleCols.map((col) => {
+            const hasAlloc = colHasAllocations(editDraft, col.id);
+            return `
+              <th class="text-right">
+                <div>
+                  ${escHtml(col.name)}
+                  ${col.isActive === false ? ' <span class="badge badge-neutral" style="font-size:0.6rem;">Archivada</span>' : ''}
+                  ${!col.locked && col.isActive !== false ? `<button type="button" class="col-remove-btn" onclick="removeEditColumn('${col.id}')" title="${hasAlloc ? 'Archivar columna hacia adelante' : 'Quitar columna'}"><svg style="width:0.75rem;height:0.75rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>` : ''}
+                </div>
+                ${hasAlloc
+                  ? `<span class="col-cat-pill col-cat-pill-locked" title="Categoría protegida: esta columna ya tiene pagos registrados">
+                      <svg style="width:0.625rem;height:0.625rem;flex-shrink:0;opacity:0.7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      <span>→ ${escHtml(getExpName(col.expenseAccountId))}</span>
+                    </span>`
+                  : `<button type="button" class="col-cat-pill col-cat-pill-editable" title="Cambiar categoría de gasto" onclick="openAccountPicker({ mode: 'EXPENSES', currentValue: '${col.expenseAccountId}', title: 'Categoría para ${escHtml(col.name).replace(/'/g, "\\'")}', onChange: (val) => { changeEditColExpense('${col.id}', val); renderEditTable(); } })">
+                      <span>→ ${escHtml(getExpName(col.expenseAccountId))}</span>
+                      <svg style="width:0.65rem;height:0.65rem;flex-shrink:0;opacity:0.65;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>`
+                }
+              </th>
+            `;
+          }).join('')}
+          <th class="text-right">Total cuota</th>
+        </tr>
+      `;
+
+      tbody.innerHTML = visible.map((r) => {
+        const idx = editDraft.rows.findIndex((x) => x.num === r.num);
+        const d = getRowDerived(r, editDraft.columns);
+        const total = rowTotal(r, visibleCols);
+        if (d.status === 'PAID') {
+          const lastAlloc = (r.allocations || [])[(r.allocations || []).length - 1];
+          return `
+            <tr class="row-paid">
+              <td class="text-left font-semibold tabular-nums">#${r.num}</td>
+              ${editRowFilter === 'ALL' ? '<td class="text-left"><span class="badge badge-emerald">Pagada · Protegida</span></td>' : ''}
+              <td class="text-left tabular-nums">${fmtShortDate(lastAlloc?.paidAt || r.dueDate)}</td>
+              <td class="text-right tabular-nums">${fmt(r.principal)}</td>
+              ${visibleCols.map((c) => {
+                const val = r.charges[c.id];
+                return `<td class="text-right tabular-nums">${val === null || val === undefined ? '—' : fmt(val)}</td>`;
+              }).join('')}
+              <td class="text-right font-semibold tabular-nums">${fmt(total)}</td>
+            </tr>
+          `;
+        }
+        const isPartial = d.status === 'PARTIAL';
+        return `
+          <tr>
+            <td class="text-left font-semibold tabular-nums">#${r.num}</td>
+            ${editRowFilter === 'ALL' ? `<td class="text-left">${isPartial ? '<span class="badge badge-amber">Parcial</span>' : '<span class="badge badge-amber">Pendiente</span>'}</td>` : ''}
+            <td class="text-left"><input class="input-cell input-cell-date tabular-nums" type="date" value="${r.dueDate}" onchange="editDraft.rows[${idx}].dueDate=this.value" /></td>
+            <td class="text-right">
+              <input class="input-cell tabular-nums text-right" inputmode="numeric" value="${fmtNum(r.principal)}" oninput="formatThousandInput(this); updateEditCell(${idx}, 'principal', this.value)" />
+              ${isPartial ? `<div class="text-xs text-muted" style="font-size:0.65rem;">Mín. ${fmt(d.paidPrincipal)}</div>` : ''}
+            </td>
+            ${visibleCols.map((c) => {
+              if (c.isActive === false) return '<td class="text-right text-muted tabular-nums">—</td>';
+              return `<td class="text-right"><input class="input-cell tabular-nums text-right" inputmode="numeric" value="${fmtNum(r.charges[c.id] || 0)}" oninput="formatThousandInput(this); updateEditCell(${idx}, '${c.id}', this.value)" /></td>`;
+            }).join('')}
+            <td class="text-right font-bold tabular-nums" id="edit-row-total-${idx}">${fmt(total)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      updateEditTotalsFooter();
+    }
+
+    function updateEditCell(idx, key, formattedVal) {
+      if (!editHistoryStack.length) pushEditSnapshot();
+      let num = parseNum(formattedVal);
+      if (key === 'principal') {
+        const minPaid = getRowDerived(editDraft.rows[idx], editDraft.columns).paidPrincipal;
+        if (num < Math.max(1, minPaid)) {
+          num = Math.max(1, minPaid);
+        }
+        editDraft.rows[idx].principal = num;
+      } else {
+        editDraft.rows[idx].charges[key] = num;
+      }
+
+      const r = editDraft.rows[idx];
+      const cell = document.getElementById('edit-row-total-' + idx);
+      if (cell) cell.textContent = fmt(rowTotal(r, editDraft.columns));
+
+      const newPendCap = editDraft.rows
+        .filter((x) => getRowDerived(x, editDraft.columns).status !== 'PAID')
+        .reduce((s, x) => s + getRowDerived(x, editDraft.columns).pendingPrincipal, 0);
+      document.getElementById('edit-pending-cap').value = fmtNum(newPendCap);
+
+      updateEditTotalsFooter();
+      updateEditImpact();
+    }
+
+    function updateEditTotalsFooter() {
+      const visible = editDraft.rows.filter((r) => editRowFilter === 'ALL' || getRowDerived(r, editDraft.columns).status !== 'PAID');
+      const visibleCols = editDraft.columns.filter((c) => c.isActive !== false || (editRowFilter === 'ALL' && colHasAllocations(editDraft, c.id)));
+      const tfoot = document.getElementById('edit-tfoot');
+      const colSpan = editRowFilter === 'ALL' ? 3 : 2;
+      const sumCap = visible.reduce((s, r) => s + r.principal, 0);
+      const colSums = visibleCols.map((c) => visible.reduce((s, r) => s + (Number(r.charges[c.id]) || 0), 0));
+      const grandTotal = sumCap + colSums.reduce((a, b) => a + b, 0);
+
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="${colSpan}" class="text-left">Totales (${visible.length} cuotas)</td>
+          <td class="text-right tabular-nums">${fmt(sumCap)}</td>
+          ${colSums.map((sum) => `<td class="text-right tabular-nums">${fmt(sum)}</td>`).join('')}
+          <td class="text-right tabular-nums">${fmt(grandTotal)}</td>
+        </tr>
+      `;
+    }
+
+    function updateEditImpact() {
+      const pendRows = editDraft.rows.filter((r) => getRowDerived(r, editDraft.columns).status !== 'PAID');
+      const paidRows = editDraft.rows.filter((r) => getRowDerived(r, editDraft.columns).status === 'PAID');
+      const pendCap = pendRows.reduce((s, r) => s + getRowDerived(r, editDraft.columns).pendingPrincipal, 0);
+      const avgPmt = pendRows.length ? Math.round(pendRows.reduce((s, r) => s + getRowDerived(r, editDraft.columns).pendingTotal, 0) / pendRows.length) : 0;
+      const totalInt = pendRows.reduce((s, r) => s + (getRowDerived(r, editDraft.columns).pendingCharges.interest || 0), 0);
+
+      const capDiff = pendCap - baselineMetrics.pendingCap;
+      const pmtDiff = avgPmt - baselineMetrics.avgPmt;
+      const intDiff = totalInt - baselineMetrics.totalInterest;
+
+      document.getElementById('imp-cap-val').textContent = fmt(pendCap);
+      const capDiffEl = document.getElementById('imp-cap-diff');
+      if (capDiff === 0) {
+        capDiffEl.textContent = 'Sin diferencia vs. saldo actual';
+        capDiffEl.className = 'text-xs text-muted tabular-nums';
+      } else {
+        capDiffEl.textContent = `${capDiff < 0 ? '- ' : '+ '}${fmt(Math.abs(capDiff))} vs. saldo guardado`;
+        capDiffEl.className = `text-xs font-bold tabular-nums ${capDiff < 0 ? 'text-emerald' : 'text-rose'}`;
+      }
+
+      document.getElementById('imp-pmt-val').textContent = fmt(avgPmt);
+      const pmtDiffEl = document.getElementById('imp-pmt-diff');
+      if (pmtDiff === 0) {
+        pmtDiffEl.textContent = 'Igual al plan guardado';
+        pmtDiffEl.className = 'text-xs text-muted tabular-nums';
+      } else {
+        pmtDiffEl.textContent = `${pmtDiff < 0 ? '- ' : '+ '}${fmt(Math.abs(pmtDiff))} por mes`;
+        pmtDiffEl.className = `text-xs font-bold tabular-nums ${pmtDiff < 0 ? 'text-emerald' : 'text-rose'}`;
+      }
+
+      document.getElementById('imp-int-val').textContent = fmt(totalInt);
+      const intDiffEl = document.getElementById('imp-int-diff');
+      if (intDiff === 0) {
+        intDiffEl.textContent = 'Igual al plan guardado';
+        intDiffEl.className = 'text-xs text-muted tabular-nums';
+      } else {
+        intDiffEl.textContent = `${intDiff < 0 ? '- ' : '+ '}${fmt(Math.abs(intDiff))} de diferencia`;
+        intDiffEl.className = `text-xs font-bold tabular-nums ${intDiff < 0 ? 'text-emerald' : 'text-rose'}`;
+      }
+
+      const firstNum = pendRows[0] ? pendRows[0].num : paidRows.length + 1;
+      const lastNum = pendRows.length ? pendRows[pendRows.length - 1].num : firstNum;
+      document.getElementById('imp-cnt-val').textContent = `${pendRows.length} cuotas (#${firstNum}–#${lastNum})`;
+      document.getElementById('imp-cnt-diff').textContent =
+        pendRows.length === baselineMetrics.pendCount
+          ? `${paidRows.length} pagadas quedan intactas`
+          : `Antes quedaban ${baselineMetrics.pendCount} cuotas`;
+
+      const reasonBox = document.getElementById('edit-diff-reason-box');
+      reasonBox.classList.toggle('hidden', capDiff === 0);
+      if (capDiff !== 0) {
+        document.getElementById('edit-diff-reason-title').textContent =
+          `El capital pendiente cambió en ${capDiff < 0 ? '-' : '+'} ${fmt(Math.abs(capDiff))}`;
+        updateEditDiffOptions(capDiff);
+      }
+
+      document.getElementById('edit-save-summary').textContent =
+        `${pendRows.length} cuotas pendientes · Capital pendiente total: ${fmt(pendCap)}`;
+    }
+
+    let editDiffReason = 'CASH_TRANSFER';
+
+    function selectEditDiffReason(reason) {
+      editDiffReason = reason;
+      ['CASH_TRANSFER', 'CATEGORY', 'CAPITAL_ADJUSTMENT'].forEach((r) => {
+        document.getElementById('diff-card-' + r).classList.toggle('selected', r === reason);
+      });
+      toggleEditDiffAccount();
+    }
+
+    let lastEditCapDiff = 0;
+
+    function openEditDiffCatPicker() {
+      const isDecrease = lastEditCapDiff < 0;
+      openAccountPicker({
+        targetId: 'edit-diff-cat-acc',
+        mode: isDecrease ? 'INCOMES' : 'EXPENSES',
+        title: isDecrease ? 'Seleccionar categoría de ingreso' : 'Seleccionar categoría de gasto',
+      });
+    }
+
+    function updateEditDiffOptions(capDiff) {
+      lastEditCapDiff = capDiff;
+      const isDecrease = capDiff < 0;
+
+      document.getElementById('diff-card-cash-title').textContent = isDecrease
+        ? 'Adelanté desde mi cuenta'
+        : 'Ingresó dinero a mi cuenta';
+      document.getElementById('diff-card-cash-desc').textContent = isDecrease
+        ? 'Salió de tu banco o efectivo para bajar la deuda.'
+        : 'Recibiste un desembolso o ampliación en tu banco.';
+      document.getElementById('diff-card-cat-title').textContent = isDecrease
+        ? 'Descuento o quita a favor'
+        : 'Gasto sumado a la deuda';
+      document.getElementById('diff-card-cat-desc').textContent = isDecrease
+        ? 'Imputa la rebaja a una categoría de Ingreso.'
+        : 'Imputa el recargo a una categoría de Gasto.';
+
+      document.getElementById('edit-diff-pay-label').textContent = isDecrease
+        ? 'Cuenta desde donde pagaste *'
+        : 'Cuenta donde ingresó el dinero *';
+      document.getElementById('edit-diff-cat-label').textContent = isDecrease
+        ? 'Categoría de Ingreso *'
+        : 'Categoría de Gasto *';
+
+      setPickerFieldValue(
+        'edit-diff-cat-acc',
+        isDecrease ? 'INCOMES' : 'EXPENSES',
+        isDecrease ? 'Otros Ingresos / Descuentos' : 'exp_int',
+      );
+      toggleEditDiffAccount();
+    }
+
+    function toggleEditDiffAccount() {
+      const val = editDiffReason;
+      const hintEl = document.getElementById('edit-diff-reason-hint');
+      document.getElementById('edit-diff-pay-wrap').classList.toggle('hidden', val !== 'CASH_TRANSFER');
+      document.getElementById('edit-diff-cat-wrap').classList.toggle('hidden', val !== 'CATEGORY');
+      document.getElementById('edit-diff-cap-info').classList.toggle('hidden', val !== 'CAPITAL_ADJUSTMENT');
+
+      if (val === 'CASH_TRANSFER') {
+        hintEl.textContent = 'Generará un movimiento en la cuenta bancaria elegida en la fecha indicada.';
+      } else if (val === 'CATEGORY') {
+        hintEl.textContent = 'Ajustará la deuda contra la categoría elegida sin afectar tus saldos bancarios.';
+      } else {
+        hintEl.textContent = 'Ajustará tu deuda contra Capital sin alterar tu caja ni tus ingresos/gastos del mes.';
+      }
+    }
+
+    function cancelEditLoan() {
+      editInitialized = false;
+      switchView('detail');
+    }
+
+    function saveEditLoan() {
+      editDraft.name = document.getElementById('edit-name').value.trim() || editDraft.name;
+      editDraft.bankAccount = document.getElementById('edit-bank-acc').value;
+      editDraft.annualRate = parseFloat(String(document.getElementById('edit-rate').value).replace(',', '.')) || editDraft.annualRate;
+
+      Object.assign(primaryLoan, JSON.parse(JSON.stringify(editDraft)));
+      editInitialized = false;
+      renderAllLoanViews();
+      switchView('detail');
+      showToast('Cambios guardados en ' + primaryLoan.name + '.');
+    }
+
+    // =========================================================================
+    // MODAL 1: PAGAR CUOTA (Soporta pagos parciales 1:N y saldos pendientes)
+    // =========================================================================
+    let activePayCtx = null;
+
+    function openPayLoan1Modal(rowNum) {
+      const row = primaryLoan.rows.find((r) => r.num === rowNum);
+      if (!row) return;
+      const d = getRowDerived(row, primaryLoan.columns);
+      openPayModal({
+        source: 'loan1',
+        num: row.num,
+        title: primaryLoan.name,
+        cap: d.pendingPrincipal,
+        charges: primaryLoan.columns
+          .filter((c) => c.isActive !== false)
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            val: d.pendingCharges[c.id] || 0,
+          })),
+      });
+    }
+
+    function openPayModal(ctx) {
+      activePayCtx = ctx;
+      document.getElementById('pay-modal-title').textContent = 'Pagar cuota #' + ctx.num;
+      document.getElementById('pay-modal-sub').textContent = ctx.title;
+      setPickerFieldValue('pay-account', 'PAYMENT_ACCOUNTS', primaryLoan.bankAccount || 'Itaú Cuenta Corriente');
+
+      const grid = document.getElementById('pay-fields-grid');
+      grid.innerHTML = `
+        <div>
+          <label class="field-label" for="pay-cap">Capital</label>
+          <input id="pay-cap" class="input tabular-nums text-right font-bold" inputmode="numeric" value="${fmtNum(ctx.cap)}" oninput="formatThousandInput(this); updatePayPreview()" />
+        </div>
+        ${ctx.charges.map((ch, i) => `
+          <div>
+            <label class="field-label" for="pay-ch-${i}">${escHtml(ch.name)}</label>
+            <input id="pay-ch-${i}" class="input tabular-nums text-right font-bold" inputmode="numeric" value="${fmtNum(ch.val)}" oninput="formatThousandInput(this); updatePayPreview()" />
+          </div>
+        `).join('')}
+      `;
+
+      updatePayPreview();
+      document.getElementById('pay-modal').classList.add('open');
+    }
+
+    function closePayModal() {
+      document.getElementById('pay-modal').classList.remove('open');
+    }
+
+    function updatePayPreview() {
+      if (!activePayCtx) return;
+      const cap = parseNum(document.getElementById('pay-cap')?.value);
+      const chSum = activePayCtx.charges.reduce((s, _c, i) => s + parseNum(document.getElementById('pay-ch-' + i)?.value), 0);
+      const total = cap + chSum;
+      const acc = document.getElementById('pay-account').value;
+      document.getElementById('pay-total-badge').textContent = fmt(total);
+      document.getElementById('prev-total').textContent = fmt(total);
+      document.getElementById('pay-summary-text').textContent = 'Se debitará de ' + acc;
+    }
+
+    function confirmPayModal() {
+      if (activePayCtx && activePayCtx.source === 'loan1') {
+        const row = primaryLoan.rows.find((r) => r.num === activePayCtx.num);
+        if (row) {
+          const allocatedPrincipal = parseNum(document.getElementById('pay-cap')?.value);
+          const allocatedCharges = {};
+          activePayCtx.charges.forEach((ch, i) => {
+            allocatedCharges[ch.id] = parseNum(document.getElementById('pay-ch-' + i)?.value);
+          });
+          if (!row.allocations) row.allocations = [];
+          row.allocations.push({
+            id: 'alloc_' + row.num + '_' + Date.now(),
+            paidAt: document.getElementById('pay-date').value || TODAY_ISO,
+            paidAccount: document.getElementById('pay-account').value,
+            allocatedPrincipal,
+            allocatedCharges,
+          });
+          editInitialized = false;
+          renderAllLoanViews();
+        }
+      }
+      closePayModal();
+      showToast(`Pago de cuota #${activePayCtx?.num || ''} registrado.`);
+    }
+
+    // =========================================================================
+    // MODAL 2: REVERTIR PAGO (Por allocation_id para soportar pagos 1:N)
+    // =========================================================================
+    let revertTargetNum = null;
+    let revertSelectedAllocId = null;
+
+    function openRevertModal(rowNum) {
+      const row = primaryLoan.rows.find((r) => r.num === rowNum);
+      if (!row || !row.allocations || !row.allocations.length) return;
+      revertTargetNum = rowNum;
+      const allocs = row.allocations;
+      revertSelectedAllocId = allocs[allocs.length - 1].id;
+
+      document.getElementById('revert-modal-sub').textContent = `${primaryLoan.name} · Cuota #${rowNum}`;
+      const listEl = document.getElementById('revert-alloc-list');
+      if (allocs.length > 1) {
+        listEl.classList.remove('hidden');
+        listEl.innerHTML = `<div class="field-label" style="margin-bottom:0.25rem;">Elegí qué pago querés revertir:</div>` +
+          allocs.map((a) => {
+            const sumCh = Object.values(a.allocatedCharges || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+            const tot = (Number(a.allocatedPrincipal) || 0) + sumCh;
+            return `
+              <label style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.55rem 0.75rem; border:1px solid hsl(var(--border)); border-radius:var(--radius-lg); cursor:pointer; font-size:0.8rem;">
+                <span style="display:flex; align-items:center; gap:0.5rem;">
+                  <input type="radio" name="revert-alloc-radio" value="${a.id}" ${a.id === revertSelectedAllocId ? 'checked' : ''} onchange="selectRevertAlloc('${a.id}')" />
+                  <span>${fmtShortDate(a.paidAt)} · ${escHtml(a.paidAccount)}</span>
+                </span>
+                <strong class="tabular-nums">${fmt(tot)}</strong>
+              </label>
+            `;
+          }).join('');
+      } else {
+        listEl.classList.add('hidden');
+        listEl.innerHTML = '';
+      }
+      updateRevertModalPreview();
+      document.getElementById('revert-modal').classList.add('open');
+    }
+
+    function selectRevertAlloc(allocId) {
+      revertSelectedAllocId = allocId;
+      updateRevertModalPreview();
+    }
+
+    function updateRevertModalPreview() {
+      const row = primaryLoan.rows.find((r) => r.num === revertTargetNum);
+      const alloc = row?.allocations?.find((a) => a.id === revertSelectedAllocId);
+      if (!row || !alloc) return;
+      const sumCh = Object.values(alloc.allocatedCharges || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+      const total = (Number(alloc.allocatedPrincipal) || 0) + sumCh;
+      document.getElementById('revert-amount-line').textContent = `Vas a revertir el pago de ${fmt(total)} (${fmtShortDate(alloc.paidAt)})`;
+      document.getElementById('revert-detail-line').textContent =
+        `El importe se devolverá al saldo de ${alloc.paidAccount || primaryLoan.bankAccount} y se recalculará el estado de la cuota #${revertTargetNum}.`;
+    }
+
+    function closeRevertModal() {
+      document.getElementById('revert-modal').classList.remove('open');
+      revertTargetNum = null;
+      revertSelectedAllocId = null;
+    }
+
+    function confirmRevertModal() {
+      if (revertTargetNum !== null && revertSelectedAllocId) {
+        const row = primaryLoan.rows.find((r) => r.num === revertTargetNum);
+        if (row && row.allocations) {
+          row.allocations = row.allocations.filter((a) => a.id !== revertSelectedAllocId);
+          editInitialized = false;
+          renderAllLoanViews();
+          showToast(`Pago revertido en cuota #${revertTargetNum}.`);
+        }
+      }
+      closeRevertModal();
+    }
+
+    // =========================================================================
+    // MODAL 3: ELIMINAR / ANULAR PRÉSTAMO (Spec §5.3)
+    // =========================================================================
+    function openDeleteLoanModal() {
+      const activeAllocsCount = primaryLoan.rows.reduce((s, r) => s + (r.allocations ? r.allocations.length : 0), 0);
+      document.getElementById('delete-loan-sub').textContent = primaryLoan.name;
+      const titleEl = document.getElementById('delete-loan-msg-title');
+      const bodyEl = document.getElementById('delete-loan-msg-body');
+      const btnEl = document.getElementById('delete-loan-confirm-btn');
+
+      if (activeAllocsCount > 0) {
+        titleEl.textContent = `No se puede eliminar todavía (${activeAllocsCount} pagos activos)`;
+        bodyEl.textContent = 'Para proteger el Libro Diario y el saldo de tus bancos, revertí primero los pagos registrados en las cuotas.';
+        btnEl.classList.add('hidden');
+      } else {
+        titleEl.textContent = 'Confirmar eliminación / anulación del préstamo';
+        bodyEl.textContent = 'Se revertirá o limpiará el asiento de apertura y se desactivará/eliminará la cuenta de Pasivo vinculada.';
+        btnEl.classList.remove('hidden');
+      }
+      document.getElementById('delete-loan-modal').classList.add('open');
+    }
+
+    function closeDeleteLoanModal() {
+      document.getElementById('delete-loan-modal').classList.remove('open');
+    }
+
+    function confirmDeleteLoanModal() {
+      primaryLoan.status = 'CANCELLED';
+      closeDeleteLoanModal();
+      renderAllLoanViews();
+      switchView('list');
+      showToast('Préstamo eliminado / anulado correctamente.');
+    }
+
+    // =========================================================================
+    // UTILITIES & KEYBOARD
+    // =========================================================================
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter' && document.getElementById('pay-modal').classList.contains('open')) {
+        confirmPayModal();
+      }
+      if (e.key === 'Escape') {
+        closePayModal();
+        closeRevertModal();
+        closeDeleteLoanModal();
+      }
+    });
+
+    // Init
+    syncWizStartSelect();
+    updateWizLiabilityPreview();
+    recalcWizardGrid();
+    renderAllLoanViews();
+  </script>
+</body>
+</html>

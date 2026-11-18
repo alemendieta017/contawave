@@ -135,13 +135,15 @@ $$\text{FlujoProyectado}(C, D, M) = \max\Big(\text{Presupuesto}(C, D, M),\; \tex
 
 ---
 
-## 4. Cuentas de Sistema Auto-Aprovisionadas (`SystemRole`)
+## 4. Cuentas de Sistema Auto-Aprovisionadas (`SystemRole`) y Cuentas Iniciales
 
-Para que el usuario **nunca tenga que crear ni elegir cuentas técnicas a mano**, se extiende `SystemRole` en `@sistema-contable/shared` con 3 cuentas creadas automáticamente por ContaWave:
+Para que el usuario **nunca tenga que crear ni elegir cuentas técnicas de control a mano**, `SystemRole` en `@sistema-contable/shared` se reserva exclusivamente para cuentas estructurales/de control creadas automáticamente por ContaWave:
 
-1. `ACCOUNTS_RECEIVABLE` $\rightarrow$ **"Cuentas por Cobrar"** (`type: 'ASSET'`, `isCashOrBank: false`).
-2. `ACCOUNTS_PAYABLE` $\rightarrow$ **"Cuentas por Pagar"** (`type: 'LIABILITY'`, `isCashOrBank: false`).
-3. `BANK_INTEREST_EXPENSE` $\rightarrow$ **"Intereses y Cargos Financieros"** (`type: 'EXPENSE'`, `isCashOrBank: false`).
+1. `ACCOUNTS_RECEIVABLE` $\rightarrow$ **"Cuentas por Cobrar"** (`type: 'ASSET'`, `isCashOrBank: false`, `isControlAccount: true`, `controlType: 'RECEIVABLE'`).
+2. `ACCOUNTS_PAYABLE` $\rightarrow$ **"Cuentas por Pagar"** (`type: 'LIABILITY'`, `isCashOrBank: false`, `isControlAccount: true`, `controlType: 'PAYABLE'`).
+
+> **Categorías de Gasto Financiero (`EXPENSE`) sin candado `SystemRole`:**  
+> La cuenta inicial **"Intereses y Cargos Financieros"** (`type: 'EXPENSE'`, `isCashOrBank: false`, `isControlAccount: false`) se aprovisiona como una cuenta de gasto **normal y libre** del Plan de Cuentas (sin `systemRole` bloqueante — se elimina la restricción rígida de `BANK_INTEREST_EXPENSE`). De este modo sigue siendo usable en Préstamos, Tarjetas, Transacción Rápida y Presupuestos, y el usuario puede renombrarla, editarla o sustituirla por sus propias categorías (ej. _Intereses Itaú_, _Seguro de Vida_, _IVA s/ Interés_).
 
 ### ¿Sub-cuentas físicas por Contacto o Desglose Virtual en Árbol?
 
