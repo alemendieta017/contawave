@@ -18,7 +18,7 @@
   --color-indigo-200: #dec3f3;
   --color-indigo-300: #d199ea;
   --color-indigo-400: #c85fe0;
-  --color-indigo-500: #a845e8;
+  --color-indigo-500: #a23ce5;
   --color-indigo-600: #9333ea;
   --color-indigo-700: #7e22ce;
   --color-indigo-800: #6b21a8;
@@ -67,7 +67,7 @@
   .dark {
     --brand-gradient-start: 269 66% 42%;
     --brand-gradient-mid: 271 85% 61%;
-    --brand-gradient-end: 289 71% 69%;
+    --brand-gradient-end: 289 68% 60%;
     --background: 267 55% 7%;
     --foreground: 268 50% 97%;
     --card: 267 45% 12%;
@@ -119,6 +119,7 @@ body {
     hsl(var(--brand-gradient-end, 289 68% 63%)) 100%
   );
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
