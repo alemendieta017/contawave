@@ -26,7 +26,7 @@ export default function BrandLogo({
           width={40}
           height={40}
           priority={priority}
-          className="object-contain w-auto h-full"
+          className="object-contain w-auto h-full dark:brightness-125 transition-[filter]"
         />
       </div>
     );
@@ -41,7 +41,7 @@ export default function BrandLogo({
           width={120}
           height={94}
           priority={priority}
-          className="object-contain w-auto h-full dark:brightness-175 dark:contrast-105 transition-[filter]"
+          className="object-contain w-auto h-full dark:brightness-150 dark:contrast-105 transition-[filter]"
         />
       </div>
     );
@@ -55,7 +55,7 @@ export default function BrandLogo({
         width={165}
         height={40}
         priority={priority}
-        className="object-contain w-auto h-full dark:brightness-175 dark:contrast-105 transition-[filter]"
+        className="object-contain w-auto h-full dark:brightness-150 dark:contrast-105 transition-[filter]"
       />
     </div>
   );
