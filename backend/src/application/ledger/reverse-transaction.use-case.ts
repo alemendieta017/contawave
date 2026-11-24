@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
 import { JournalEntryEntity } from '../../infrastructure/database/entities/journal-entry.entity';
 import { BalanceUpdateService } from '../periods/balance-update.service';
@@ -20,89 +20,98 @@ export class ReverseTransactionUseCase {
   ) {}
 
   async execute(userId: string, transactionId: string, options?: { allowControlled?: boolean }) {
-    return this.dataSource.transaction('SERIALIZABLE', async (entityManager) => {
-      // Find original transaction
-      const originalTx = await entityManager.findOne(TransactionEntity, {
-        where: { id: transactionId, userId },
-        relations: ['entries'],
-      });
+    return this.dataSource.transaction('SERIALIZABLE', async (entityManager) =>
+      this.executeWithManager(entityManager, userId, transactionId, options),
+    );
+  }
 
-      if (!originalTx) {
-        throw new NotFoundException(`Transaction with ID ${transactionId} not found`);
-      }
-
-      await assertTransactionMutationAllowed(entityManager, originalTx, 'reverse', options);
-
-      const reversalDate = new Date().toISOString().split('T')[0];
-
-      // Create new reversal transaction
-      const reversalTx = entityManager.create(TransactionEntity, {
-        userId,
-        accountingDate: reversalDate,
-        description: `Reversión de asiento: ${originalTx.description}`,
-        status: 'POSTED',
-        reversalOfId: originalTx.id,
-        originModule: originalTx.originModule ?? 'MANUAL',
-        originEntityId: originalTx.originEntityId ?? null,
-      });
-
-      // 1. Auto-provision or obtain period for reversal date
-      await this.ensurePeriodService.ensurePeriod(
-        entityManager,
-        userId,
-        reversalDate.substring(0, 7),
-      );
-
-      // Mark original transaction as reversed
-      originalTx.status = 'REVERSED';
-      await entityManager.save(TransactionEntity, originalTx);
-
-      const savedReversalTx = await entityManager.save(TransactionEntity, reversalTx);
-
-      // Create offset entries (flipped types)
-      const reversalEntries: JournalEntryEntity[] = [];
-      for (const entry of originalTx.entries) {
-        const offsetEntry = entityManager.create(JournalEntryEntity, {
-          transactionId: savedReversalTx.id,
-          accountId: entry.accountId,
-          entryType: entry.entryType === 'DEBIT' ? 'CREDIT' : 'DEBIT',
-          amount: entry.amount,
-          amountBase: entry.amountBase,
-          rateAtDate: entry.rateAtDate,
-        });
-        const savedEntry = await entityManager.save(JournalEntryEntity, offsetEntry);
-        reversalEntries.push(savedEntry);
-      }
-
-      // 2. Call balance-update.service to add reversal balances
-      const balanceChanges = reversalEntries.map((e) => ({
-        accountId: e.accountId,
-        debitDiff: e.entryType === 'DEBIT' ? Number(e.amountBase) : 0,
-        creditDiff: e.entryType === 'CREDIT' ? Number(e.amountBase) : 0,
-      }));
-
-      await this.balanceUpdateService.updateBalances(
-        entityManager,
-        userId,
-        reversalDate,
-        balanceChanges,
-      );
-
-      return {
-        id: savedReversalTx.id,
-        accountingDate: savedReversalTx.accountingDate,
-        description: savedReversalTx.description,
-        status: savedReversalTx.status,
-        reversalOfId: savedReversalTx.reversalOfId,
-        entries: reversalEntries.map((e) => ({
-          id: e.id,
-          accountId: e.accountId,
-          entryType: e.entryType,
-          amount: Number(e.amount),
-          amountBase: Number(e.amountBase),
-          rateAtDate: Number(e.rateAtDate),
-        })),
-      };
+  async executeWithManager(
+    entityManager: EntityManager,
+    userId: string,
+    transactionId: string,
+    options?: { allowControlled?: boolean },
+  ) {
+    // Find original transaction
+    const originalTx = await entityManager.findOne(TransactionEntity, {
+      where: { id: transactionId, userId },
+      relations: ['entries'],
     });
+
+    if (!originalTx) {
+      throw new NotFoundException(`Transaction with ID ${transactionId} not found`);
+    }
+
+    await assertTransactionMutationAllowed(entityManager, originalTx, 'reverse', options);
+
+    const reversalDate = new Date().toISOString().split('T')[0];
+
+    // Create new reversal transaction
+    const reversalTx = entityManager.create(TransactionEntity, {
+      userId,
+      accountingDate: reversalDate,
+      description: `Reversión de asiento: ${originalTx.description}`,
+      status: 'POSTED',
+      reversalOfId: originalTx.id,
+      originModule: originalTx.originModule ?? 'MANUAL',
+      originEntityId: originalTx.originEntityId ?? null,
+    });
+
+    // 1. Auto-provision or obtain period for reversal date
+    await this.ensurePeriodService.ensurePeriod(
+      entityManager,
+      userId,
+      reversalDate.substring(0, 7),
+    );
+
+    // Mark original transaction as reversed
+    originalTx.status = 'REVERSED';
+    await entityManager.save(TransactionEntity, originalTx);
+
+    const savedReversalTx = await entityManager.save(TransactionEntity, reversalTx);
+
+    // Create offset entries (flipped types)
+    const reversalEntries: JournalEntryEntity[] = [];
+    for (const entry of originalTx.entries) {
+      const offsetEntry = entityManager.create(JournalEntryEntity, {
+        transactionId: savedReversalTx.id,
+        accountId: entry.accountId,
+        entryType: entry.entryType === 'DEBIT' ? 'CREDIT' : 'DEBIT',
+        amount: entry.amount,
+        amountBase: entry.amountBase,
+        rateAtDate: entry.rateAtDate,
+      });
+      const savedEntry = await entityManager.save(JournalEntryEntity, offsetEntry);
+      reversalEntries.push(savedEntry);
+    }
+
+    // 2. Call balance-update.service to add reversal balances
+    const balanceChanges = reversalEntries.map((e) => ({
+      accountId: e.accountId,
+      debitDiff: e.entryType === 'DEBIT' ? Number(e.amountBase) : 0,
+      creditDiff: e.entryType === 'CREDIT' ? Number(e.amountBase) : 0,
+    }));
+
+    await this.balanceUpdateService.updateBalances(
+      entityManager,
+      userId,
+      reversalDate,
+      balanceChanges,
+    );
+
+    return {
+      id: savedReversalTx.id,
+      accountingDate: savedReversalTx.accountingDate,
+      description: savedReversalTx.description,
+      status: savedReversalTx.status,
+      reversalOfId: savedReversalTx.reversalOfId,
+      entries: reversalEntries.map((e) => ({
+        id: e.id,
+        accountId: e.accountId,
+        entryType: e.entryType,
+        amount: Number(e.amount),
+        amountBase: Number(e.amountBase),
+        rateAtDate: Number(e.rateAtDate),
+      })),
+    };
   }
 }

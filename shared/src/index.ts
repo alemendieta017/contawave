@@ -88,7 +88,6 @@ export const SystemRoleSchema = z.enum([
   'CAPITAL',
   'ACCOUNTS_RECEIVABLE',
   'ACCOUNTS_PAYABLE',
-  'BANK_INTEREST_EXPENSE',
 ]);
 export type SystemRole = z.infer<typeof SystemRoleSchema>;
 
@@ -622,7 +621,6 @@ export const DEFAULT_STARTER_ACCOUNTS: StarterAccountDefinition[] = [
     name: 'Intereses y Cargos Financieros',
     type: AccountType.EXPENSE,
     isCashOrBank: false,
-    systemRole: 'BANK_INTEREST_EXPENSE',
   },
 ];
 
@@ -757,6 +755,7 @@ export interface ScheduledCashFlowItem {
   sourceType: CommitmentSourceType;
   sourceId: string; // ID de la cuota
   commitmentId?: string; // ID del compromiso padre
+  loanId?: string; // ID del préstamo padre
   contactId?: string;
   contactName?: string;
   label: string;
@@ -987,4 +986,307 @@ export interface CommitmentKpiSummary {
 export interface CommitmentsListResponse {
   kpis: CommitmentKpiSummary;
   commitments: CommitmentDto[];
+}
+
+// Spec 02: Préstamos y Deuda Bancaria (Plan Maleable y Rubros a Medida)
+export const LoanStatusSchema = z.enum(['ACTIVE', 'SETTLED', 'CANCELLED']);
+export type LoanStatus = z.infer<typeof LoanStatusSchema>;
+
+export const LoanOpeningModeSchema = z.enum(['NEW', 'ONGOING']);
+export type LoanOpeningMode = z.infer<typeof LoanOpeningModeSchema>;
+
+export const LoanInstallmentStatusSchema = z.enum(['PENDING', 'PARTIAL', 'PAID', 'OVERDUE']);
+export type LoanInstallmentStatus = z.infer<typeof LoanInstallmentStatusSchema>;
+
+export const LoanCapitalAdjustmentTypeSchema = z.enum([
+  'CASH_TRANSFER',
+  'CATEGORY',
+  'CAPITAL_ADJUSTMENT',
+]);
+export type LoanCapitalAdjustmentType = z.infer<typeof LoanCapitalAdjustmentTypeSchema>;
+
+export const LoanChargeColumnInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  clientKey: z.string().trim().min(1, 'La clave de columna es obligatoria').max(80),
+  name: z.string().trim().min(1, 'El nombre de la columna es obligatorio').max(80),
+  expenseAccountId: z.string().uuid('Categoría de gasto inválida'),
+  isActive: z.boolean().optional().default(true),
+  sortOrder: z.number().int().min(0).optional().default(0),
+});
+export type LoanChargeColumnInput = z.infer<typeof LoanChargeColumnInputSchema>;
+
+export const LoanInstallmentInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  installmentNumber: z.number().int().min(1, 'El número de cuota debe ser mayor o igual a 1'),
+  dueDate: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD'),
+  principalAmount: z.number().positive('El capital de cada cuota debe ser mayor a 0'),
+  charges: z
+    .record(z.string(), z.number().min(0, 'Los cargos no pueden ser negativos'))
+    .optional()
+    .default({}),
+});
+export type LoanInstallmentInput = z.infer<typeof LoanInstallmentInputSchema>;
+
+export const CreateLoanRequestSchema = z
+  .object({
+    name: z.string().trim().min(1, 'El nombre del préstamo es obligatorio').max(120),
+    currencyId: z.string().uuid('Moneda inválida').optional(),
+    openingMode: LoanOpeningModeSchema,
+    openingDate: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD'),
+    disbursementAccountId: z.string().uuid('Cuenta de acreditación inválida').nullable().optional(),
+    defaultPaymentAccountId: z
+      .string()
+      .uuid('Cuenta habitual de pago inválida')
+      .nullable()
+      .optional(),
+    annualRate: z
+      .number()
+      .min(0, 'La tasa no puede ser negativa')
+      .max(999.9999)
+      .optional()
+      .default(0),
+    startInstallmentNumber: z.number().int().min(1).optional().default(1),
+    totalInstallmentsCount: z.number().int().min(1).optional(),
+    chargeColumns: z.array(LoanChargeColumnInputSchema).optional().default([]),
+    installments: z.array(LoanInstallmentInputSchema).min(1, 'Debe incluir al menos 1 cuota'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.openingMode === 'NEW' && !data.disbursementAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Debe seleccionar la cuenta bancaria donde ingresó el desembolso',
+        path: ['disbursementAccountId'],
+      });
+    }
+    const seenKeys = new Set<string>();
+    for (const col of data.chargeColumns || []) {
+      if (seenKeys.has(col.clientKey)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Columna duplicada: ${col.clientKey}`,
+          path: ['chargeColumns'],
+        });
+        break;
+      }
+      seenKeys.add(col.clientKey);
+    }
+    const seenNumbers = new Set<number>();
+    for (const inst of data.installments) {
+      if (seenNumbers.has(inst.installmentNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Número de cuota duplicado: #${inst.installmentNumber}`,
+          path: ['installments'],
+        });
+        break;
+      }
+      seenNumbers.add(inst.installmentNumber);
+    }
+  });
+export type CreateLoanRequest = z.infer<typeof CreateLoanRequestSchema>;
+
+export const PayLoanInstallmentRequestSchema = z
+  .object({
+    paymentAccountId: z.string().uuid('Debe seleccionar una cuenta de pago'),
+    paidAt: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD'),
+    allocatedPrincipal: z.number().min(0, 'El capital pagado no puede ser negativo'),
+    allocatedCharges: z
+      .record(z.string(), z.number().min(0, 'Los cargos no pueden ser negativos'))
+      .optional()
+      .default({}),
+  })
+  .superRefine((data, ctx) => {
+    const chargesSum = Object.values(data.allocatedCharges || {}).reduce(
+      (sum, val) => sum + Number(val || 0),
+      0,
+    );
+    if (data.allocatedPrincipal + chargesSum <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'El total pagado debe ser mayor a 0',
+        path: ['allocatedPrincipal'],
+      });
+    }
+  });
+export type PayLoanInstallmentRequest = z.infer<typeof PayLoanInstallmentRequestSchema>;
+
+export const LoanCapitalAdjustmentInputSchema = z
+  .object({
+    type: LoanCapitalAdjustmentTypeSchema,
+    cashAccountId: z.string().uuid('Cuenta bancaria inválida').nullable().optional(),
+    categoryAccountId: z.string().uuid('Categoría inválida').nullable().optional(),
+    adjustmentDate: z.string().regex(ISO_DATE_REGEX, 'Formato debe ser YYYY-MM-DD'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === 'CASH_TRANSFER' && !data.cashAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Debe seleccionar una cuenta bancaria o de efectivo para el ajuste',
+        path: ['cashAccountId'],
+      });
+    }
+    if (data.type === 'CATEGORY' && !data.categoryAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Debe seleccionar una categoría de Ingreso o Gasto para el ajuste',
+        path: ['categoryAccountId'],
+      });
+    }
+  });
+export type LoanCapitalAdjustmentInput = z.infer<typeof LoanCapitalAdjustmentInputSchema>;
+
+export const UpdateLoanPlanRequestSchema = z
+  .object({
+    name: z.string().trim().min(1, 'El nombre del préstamo es obligatorio').max(120),
+    annualRate: z.number().min(0, 'La tasa no puede ser negativa').max(999.9999),
+    defaultPaymentAccountId: z
+      .string()
+      .uuid('Cuenta habitual de pago inválida')
+      .nullable()
+      .optional(),
+    chargeColumns: z.array(LoanChargeColumnInputSchema),
+    installments: z.array(LoanInstallmentInputSchema),
+    capitalAdjustment: LoanCapitalAdjustmentInputSchema.nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const seenKeys = new Set<string>();
+    for (const col of data.chargeColumns || []) {
+      if (seenKeys.has(col.clientKey)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Columna duplicada: ${col.clientKey}`,
+          path: ['chargeColumns'],
+        });
+        break;
+      }
+      seenKeys.add(col.clientKey);
+    }
+    const seenNumbers = new Set<number>();
+    for (const inst of data.installments) {
+      if (seenNumbers.has(inst.installmentNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Número de cuota duplicado: #${inst.installmentNumber}`,
+          path: ['installments'],
+        });
+        break;
+      }
+      seenNumbers.add(inst.installmentNumber);
+    }
+  });
+export type UpdateLoanPlanRequest = z.infer<typeof UpdateLoanPlanRequestSchema>;
+
+export interface LoanChargeColumnDto {
+  id: string;
+  name: string;
+  expenseAccountId: string;
+  expenseAccountName: string;
+  isActive: boolean;
+  sortOrder: number;
+  hasAllocations: boolean;
+}
+
+export interface LoanPaymentAllocationDto {
+  id: string;
+  installmentId: string;
+  transactionId: string;
+  principalJournalEntryId: string | null;
+  allocatedPrincipal: number;
+  allocatedCharges: Record<string, number>;
+  totalAmount: number;
+  paidAt: string;
+  paymentAccountId: string | null;
+  paymentAccountName: string | null;
+  createdAt: string;
+}
+
+export interface LoanInstallmentDto {
+  id: string;
+  loanId: string;
+  installmentNumber: number;
+  dueDate: string;
+  principalAmount: number;
+  charges: Record<string, number>;
+  paidPrincipal: number;
+  pendingPrincipal: number;
+  paidCharges: Record<string, number>;
+  pendingCharges: Record<string, number>;
+  scheduledTotal: number;
+  paidTotal: number;
+  pendingTotal: number;
+  status: LoanInstallmentStatus;
+  isOverdue: boolean;
+  allocations: LoanPaymentAllocationDto[];
+}
+
+export interface LoanDto {
+  id: string;
+  name: string;
+  currencyId: string;
+  currencyCode: string;
+  currencySymbol: string;
+  decimalPlaces: number;
+  rateToBase: number;
+  initialPrincipal: number;
+  annualRate: number;
+  openingDate: string;
+  startInstallmentNumber: number;
+  totalInstallmentsCount: number;
+  liabilityAccountId: string;
+  liabilityAccountName: string;
+  defaultPaymentAccountId: string | null;
+  defaultPaymentAccountName: string | null;
+  initialTransactionId: string;
+  initialTransaction?: LinkedTransactionDto | null;
+  status: LoanStatus;
+  paidPrincipal: number;
+  pendingPrincipal: number;
+  paidChargesTotal: number;
+  totalPaid: number;
+  progressPercent: number;
+  paidInstallmentsCount: number;
+  pendingInstallmentsCount: number;
+  nextDueDate: string | null;
+  nextInstallmentNumber: number | null;
+  nextInstallmentPendingTotal: number;
+  isNextOverdue: boolean;
+  activeMovementsCount: number;
+  deleteActionPreview: 'DELETE' | 'CANCEL' | 'BLOCKED';
+  chargeColumns: LoanChargeColumnDto[];
+  installments: LoanInstallmentDto[];
+  createdAt: string;
+}
+
+export interface LoanPortfolioNextInstallmentDto {
+  loanId: string;
+  loanName: string;
+  installmentId: string;
+  installmentNumber: number;
+  dueDate: string;
+  pendingTotal: number;
+  pendingTotalBase: number;
+  currencyCode: string;
+  currencySymbol: string;
+  decimalPlaces: number;
+  isOverdue: boolean;
+}
+
+export interface LoansKpiSummary {
+  totalPendingPrincipalBase: number;
+  monthlyLoadBase: number;
+  activeLoansCount: number;
+  settledLoansCount: number;
+  pendingInstallmentsCount: number;
+  paidInstallmentsCount: number;
+  nextInstallment: LoanPortfolioNextInstallmentDto | null;
+}
+
+export interface LoansListResponse {
+  kpis: LoansKpiSummary;
+  loans: LoanDto[];
+}
+
+export interface DeleteLoanResponse {
+  success: boolean;
+  action: 'DELETED' | 'CANCELLED';
 }

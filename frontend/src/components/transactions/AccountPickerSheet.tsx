@@ -24,9 +24,42 @@ export interface AccountPickerSheetProps {
   placeholder?: string;
   baseCurrency?: CurrencyInfo;
   onQuickCreateAccount?: (initialName: string, suggestedType?: AccountType) => void;
+  prioritizeFinancialExpenses?: boolean;
+  allowEmpty?: boolean;
+  emptyLabel?: string;
+  onClear?: () => void;
+  renderTrigger?: (props: {
+    open: () => void;
+    selectedAccount?: AccountOption;
+    isOpen: boolean;
+  }) => React.ReactNode;
   error?: string;
   disabled?: boolean;
   className?: string;
+}
+
+const FINANCIAL_EXPENSE_KEYWORDS = [
+  'interés',
+  'interes',
+  'financ',
+  'seguro',
+  'iva',
+  'impuesto',
+  'comisi',
+  'banco',
+  'bancari',
+  'mora',
+  'cargo',
+  'administrativ',
+  'préstamo',
+  'prestamo',
+  'solidaridad',
+  'tarjeta',
+];
+
+function isFinancialExpenseAccount(name: string): boolean {
+  const lower = (name || '').toLowerCase();
+  return FINANCIAL_EXPENSE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 type TabConfig = {
@@ -104,6 +137,11 @@ export default function AccountPickerSheet({
   placeholder = 'Seleccionar cuenta...',
   baseCurrency,
   onQuickCreateAccount,
+  prioritizeFinancialExpenses = false,
+  allowEmpty = false,
+  emptyLabel = 'Elegir al momento de pagar',
+  onClear,
+  renderTrigger,
   error,
   disabled = false,
   className,
@@ -111,6 +149,7 @@ export default function AccountPickerSheet({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('ALL');
+  const [expenseScope, setExpenseScope] = useState<'FINANCIAL' | 'ALL'>('FINANCIAL');
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -217,18 +256,38 @@ export default function AccountPickerSheet({
     });
   }, [operableAccounts]);
 
+  const hasFinancialExpenses = useMemo(() => {
+    if (!prioritizeFinancialExpenses || filterMode !== 'EXPENSES') return false;
+    return operableAccounts.some((a) => isFinancialExpenseAccount(a.name));
+  }, [prioritizeFinancialExpenses, filterMode, operableAccounts]);
+
   // Filtered accounts based on search query & active tab
   const filteredAccounts = useMemo(() => {
     const trimmedSearch = search.trim().toLowerCase();
+    const limitToFinancial =
+      hasFinancialExpenses && expenseScope === 'FINANCIAL' && trimmedSearch.length === 0;
+
     return operableAccounts.filter((a) => {
       const matchesTab = activeTab === 'ALL' || a.type === activeTab;
       if (!matchesTab) return false;
+
+      if (limitToFinancial && !isFinancialExpenseAccount(a.name) && a.id !== selectedAccountId) {
+        return false;
+      }
 
       if (!trimmedSearch) return true;
       const fullName = formatAccountName(a).toLowerCase();
       return fullName.includes(trimmedSearch);
     });
-  }, [operableAccounts, activeTab, search, formatAccountName]);
+  }, [
+    operableAccounts,
+    activeTab,
+    search,
+    formatAccountName,
+    hasFinancialExpenses,
+    expenseScope,
+    selectedAccountId,
+  ]);
 
   // Group filtered accounts by standard accounting order
   const displayGroups = useMemo(() => {
@@ -317,6 +376,7 @@ export default function AccountPickerSheet({
     } else {
       setSearch('');
       setActiveTab('ALL');
+      setExpenseScope('FINANCIAL');
       setFocusedIndex(-1);
     }
   }, [isOpen]);
@@ -456,60 +516,70 @@ export default function AccountPickerSheet({
       )}
 
       {/* Trigger Button */}
-      <button
-        type="button"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-haspopup="dialog"
-        disabled={disabled}
-        onClick={() => !disabled && setIsOpen(true)}
-        onKeyDown={(e) => {
-          if (!disabled && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-            e.preventDefault();
-            setIsOpen(true);
-          }
-        }}
-        className={cn(
-          'w-full flex items-center justify-between gap-2 px-3.5 py-2.5 min-h-11 text-xs font-medium rounded-xl border bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 transition text-left outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-500',
-          error
-            ? 'border-rose-500 dark:border-rose-600 focus:ring-rose-500/15'
-            : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-slate-600 shadow-2xs',
-          disabled && 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900',
-        )}
-      >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="truncate font-semibold">
-            {selectedAccount ? (
-              formatAccountName(selectedAccount)
-            ) : (
-              <span className="text-slate-400 dark:text-slate-500 font-normal">{placeholder}</span>
-            )}
-          </span>
-        </div>
+      {renderTrigger ? (
+        renderTrigger({
+          open: () => !disabled && setIsOpen(true),
+          selectedAccount,
+          isOpen,
+        })
+      ) : (
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          disabled={disabled}
+          onClick={() => !disabled && setIsOpen(true)}
+          onKeyDown={(e) => {
+            if (!disabled && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+              e.preventDefault();
+              setIsOpen(true);
+            }
+          }}
+          className={cn(
+            'w-full flex items-center justify-between gap-2 px-3.5 py-2.5 min-h-11 text-xs font-medium rounded-xl border bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 transition text-left outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-500',
+            error
+              ? 'border-rose-500 dark:border-rose-600 focus:ring-rose-500/15'
+              : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-slate-600 shadow-2xs',
+            disabled && 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900',
+          )}
+        >
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="truncate font-semibold">
+              {selectedAccount ? (
+                formatAccountName(selectedAccount)
+              ) : (
+                <span className="text-slate-400 dark:text-slate-500 font-normal">
+                  {allowEmpty && !selectedAccountId ? emptyLabel : placeholder}
+                </span>
+              )}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {selectedAccount &&
-            isBalanceEligible(selectedAccount.type) &&
-            selectedAccount.balance !== undefined && (
-              <span
-                className={cn(
-                  'text-xs font-bold px-2 py-0.5 rounded-lg tabular-nums',
-                  selectedAccount.balance < 0
-                    ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-                )}
-              >
-                {formatAccBalance(selectedAccount)}
-              </span>
-            )}
-          <ChevronDown
-            className={cn(
-              'w-4 h-4 text-slate-400 transition-transform duration-200',
-              isOpen && 'rotate-180',
-            )}
-          />
-        </div>
-      </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedAccount &&
+              isBalanceEligible(selectedAccount.type) &&
+              selectedAccount.balance !== undefined && (
+                <span
+                  className={cn(
+                    'text-xs font-bold px-2 py-0.5 rounded-lg tabular-nums',
+                    selectedAccount.balance < 0
+                      ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+                  )}
+                >
+                  {formatAccBalance(selectedAccount)}
+                </span>
+              )}
+            <ChevronDown
+              className={cn(
+                'w-4 h-4 text-slate-400 transition-transform duration-200',
+                isOpen && 'rotate-180',
+              )}
+            />
+          </div>
+        </button>
+      )}
 
       {error && <p className="text-xs font-medium text-rose-600 dark:text-rose-400">{error}</p>}
 
@@ -581,6 +651,42 @@ export default function AccountPickerSheet({
             </div>
 
             {/* Category Filter Tabs Bar */}
+            {hasFinancialExpenses && (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 shrink-0">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Categorías sugeridas
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    data-testid="expense-scope-fin"
+                    onClick={() => setExpenseScope('FINANCIAL')}
+                    className={cn(
+                      'px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer',
+                      expenseScope === 'FINANCIAL'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+                    )}
+                  >
+                    Financieras
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="expense-scope-all"
+                    onClick={() => setExpenseScope('ALL')}
+                    className={cn(
+                      'px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer',
+                      expenseScope === 'ALL'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+                    )}
+                  >
+                    Todas las de gasto
+                  </button>
+                </div>
+              </div>
+            )}
+
             {availableTabs.length > 1 && (
               <div
                 role="tablist"
@@ -622,6 +728,30 @@ export default function AccountPickerSheet({
               className="overflow-y-auto flex-1 p-2.5 sm:p-3 space-y-1 min-h-0"
               ref={listContainerRef}
             >
+              {/* Empty / Clear Selection Option */}
+              {allowEmpty && !search.trim() && (
+                <div className="pb-1 mb-1 border-b border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClear?.();
+                      setIsOpen(false);
+                    }}
+                    className={cn(
+                      'w-full text-left px-3.5 py-2.5 min-h-11 rounded-xl text-xs transition flex items-center justify-between gap-3',
+                      !selectedAccountId
+                        ? 'bg-indigo-50/80 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 font-semibold'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800',
+                    )}
+                  >
+                    <span>{emptyLabel}</span>
+                    {!selectedAccountId && (
+                      <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    )}
+                  </button>
+                </div>
+              )}
+
               {/* Dynamic Quick Create Option */}
               {showSearchQuickCreate && (
                 <div className="p-1 mb-1">

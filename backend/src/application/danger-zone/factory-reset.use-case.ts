@@ -22,6 +22,10 @@ import { ContactEntity } from '../../infrastructure/database/entities/contact.en
 import { CommitmentEntity } from '../../infrastructure/database/entities/commitment.entity';
 import { CommitmentInstallmentEntity } from '../../infrastructure/database/entities/commitment-installment.entity';
 import { CommitmentSettlementEntity } from '../../infrastructure/database/entities/commitment-settlement.entity';
+import { LoanEntity } from '../../infrastructure/database/entities/loan.entity';
+import { LoanChargeColumnEntity } from '../../infrastructure/database/entities/loan-charge-column.entity';
+import { LoanInstallmentEntity } from '../../infrastructure/database/entities/loan-installment.entity';
+import { LoanPaymentAllocationEntity } from '../../infrastructure/database/entities/loan-payment-allocation.entity';
 import { FactoryResetDto } from '../../infrastructure/controllers/dto/danger-zone.dto';
 
 @Injectable()
@@ -105,6 +109,38 @@ export class FactoryResetUseCase {
         await manager.delete(CommitmentEntity, { userId });
       }
       await manager.delete(ContactEntity, { userId });
+
+      // 3c. Delete user's loan allocations, installments, charge columns and loans
+      const userLoans = (await manager.find(LoanEntity, { where: { userId } })) || [];
+      const loanIds = userLoans.map((l) => l.id);
+      if (loanIds.length > 0) {
+        const loanInstallments = await manager
+          .createQueryBuilder(LoanInstallmentEntity, 'li')
+          .where('li.loan_id IN (:...loanIds)', { loanIds })
+          .getMany();
+        const loanInstallmentIds = loanInstallments.map((i) => i.id);
+        if (loanInstallmentIds.length > 0) {
+          await manager
+            .createQueryBuilder()
+            .delete()
+            .from(LoanPaymentAllocationEntity)
+            .where('installment_id IN (:...loanInstallmentIds)', { loanInstallmentIds })
+            .execute();
+        }
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from(LoanInstallmentEntity)
+          .where('loan_id IN (:...loanIds)', { loanIds })
+          .execute();
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from(LoanChargeColumnEntity)
+          .where('loan_id IN (:...loanIds)', { loanIds })
+          .execute();
+        await manager.delete(LoanEntity, { userId });
+      }
 
       // 4. Delete user's journal entries and transactions
       const userTransactions = await manager.find(TransactionEntity, { where: { userId } });

@@ -15,6 +15,10 @@ import { ContactEntity } from '../database/entities/contact.entity';
 import { CommitmentEntity } from '../database/entities/commitment.entity';
 import { CommitmentInstallmentEntity } from '../database/entities/commitment-installment.entity';
 import { CommitmentSettlementEntity } from '../database/entities/commitment-settlement.entity';
+import { LoanEntity } from '../database/entities/loan.entity';
+import { LoanChargeColumnEntity } from '../database/entities/loan-charge-column.entity';
+import { LoanInstallmentEntity } from '../database/entities/loan-installment.entity';
+import { LoanPaymentAllocationEntity } from '../database/entities/loan-payment-allocation.entity';
 import { AuthModule } from '../auth/auth.module';
 import { DangerZoneController } from '../controllers/danger-zone.controller';
 import { FactoryResetUseCase } from '../../application/danger-zone/factory-reset.use-case';
@@ -38,6 +42,10 @@ import { DeleteUserAccountUseCase } from '../../application/danger-zone/delete-a
       CommitmentEntity,
       CommitmentInstallmentEntity,
       CommitmentSettlementEntity,
+      LoanEntity,
+      LoanChargeColumnEntity,
+      LoanInstallmentEntity,
+      LoanPaymentAllocationEntity,
     ]),
     AuthModule,
   ],

@@ -5,6 +5,8 @@ import { AccountEntity } from '../../infrastructure/database/entities/account.en
 import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
 import { CommitmentEntity } from '../../infrastructure/database/entities/commitment.entity';
 import { CommitmentSettlementEntity } from '../../infrastructure/database/entities/commitment-settlement.entity';
+import { LoanEntity } from '../../infrastructure/database/entities/loan.entity';
+import { LoanPaymentAllocationEntity } from '../../infrastructure/database/entities/loan-payment-allocation.entity';
 
 export function getOriginModuleLabel(originModule?: TransactionOriginModule | null): string {
   switch (originModule) {
@@ -94,10 +96,13 @@ export async function assertTransactionMutationAllowed(
 
   // Defensive check against subledger tables in case of legacy/untagged rows
   if (typeof em?.findOne === 'function') {
-    const [linkedCommitment, linkedSettlement] = await Promise.all([
-      em.findOne(CommitmentEntity, { where: { initialTransactionId: tx.id } }),
-      em.findOne(CommitmentSettlementEntity, { where: { transactionId: tx.id } }),
-    ]);
+    const [linkedCommitment, linkedSettlement, linkedLoan, linkedLoanAllocation] =
+      await Promise.all([
+        em.findOne(CommitmentEntity, { where: { initialTransactionId: tx.id } }),
+        em.findOne(CommitmentSettlementEntity, { where: { transactionId: tx.id } }),
+        em.findOne(LoanEntity, { where: { initialTransactionId: tx.id } }),
+        em.findOne(LoanPaymentAllocationEntity, { where: { transactionId: tx.id } }),
+      ]);
 
     if (
       linkedCommitment?.initialTransactionId === tx.id ||
@@ -105,6 +110,15 @@ export async function assertTransactionMutationAllowed(
     ) {
       throw new BadRequestException(
         'Esta transacción pertenece al módulo de Pagos y Cobros y solo puede gestionarse desde allí.',
+      );
+    }
+
+    if (
+      linkedLoan?.initialTransactionId === tx.id ||
+      linkedLoanAllocation?.transactionId === tx.id
+    ) {
+      throw new BadRequestException(
+        'Esta transacción pertenece al módulo de Préstamos y solo puede gestionarse desde allí.',
       );
     }
   }

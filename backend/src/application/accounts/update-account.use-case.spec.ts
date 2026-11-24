@@ -167,5 +167,28 @@ describe('UpdateAccountUseCase (US3)', () => {
         expect.objectContaining({ name: 'New Name', status: 'ACTIVE' }),
       );
     });
+
+    it('should reject renaming or status changes on LOAN control accounts', async () => {
+      const loanControlAcc = {
+        id: 'acc-loan-ctrl',
+        userId: 'user-1',
+        name: 'Préstamo Personal',
+        type: 'LIABILITY',
+        status: 'ACTIVE',
+        isControlAccount: true,
+        controlType: 'LOAN',
+      };
+      entityManagerMock.findOne.mockResolvedValue(loanControlAcc);
+
+      await expect(
+        useCase.execute('user-1', 'acc-loan-ctrl', { name: 'Otro Nombre' }),
+      ).rejects.toThrow(/Préstamos|control/i);
+
+      await expect(
+        useCase.execute('user-1', 'acc-loan-ctrl', { status: 'INACTIVE' }),
+      ).rejects.toThrow(/Préstamos|control/i);
+
+      expect(entityManagerMock.save).not.toHaveBeenCalled();
+    });
   });
 });

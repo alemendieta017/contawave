@@ -119,4 +119,19 @@ describe('DeleteAccountUseCase (US2)', () => {
     expect(entityManagerMock.count).not.toHaveBeenCalled();
     expect(entityManagerMock.delete).not.toHaveBeenCalled();
   });
+
+  it('should reject deleting a LOAN control account', async () => {
+    entityManagerMock.findOne.mockResolvedValue({
+      id: 'acc-loan-ctrl',
+      userId: 'user-1',
+      name: 'Préstamo Personal',
+      type: 'LIABILITY',
+      isControlAccount: true,
+      controlType: 'LOAN',
+    });
+
+    await expect(useCase.execute('user-1', 'acc-loan-ctrl')).rejects.toThrow(/Préstamos|control/i);
+
+    expect(entityManagerMock.delete).not.toHaveBeenCalled();
+  });
 });

@@ -35,6 +35,12 @@ import {
   SettleCommitmentInstallmentRequest,
   ForgiveCommitmentInstallmentRequest,
   RescheduleCommitmentInstallmentRequest,
+  LoansListResponse,
+  LoanDto,
+  CreateLoanRequest,
+  UpdateLoanPlanRequest,
+  PayLoanInstallmentRequest,
+  DeleteLoanResponse,
 } from '@sistema-contable/shared';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -896,6 +902,67 @@ export const api = {
     async undoSettlement(settlementId: string): Promise<CommitmentDto> {
       const res = await fetch(`${API_BASE_URL}/commitments/settlements/${settlementId}/undo`, {
         method: 'POST',
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+  },
+
+  loans: {
+    async list(): Promise<LoansListResponse> {
+      const tzOffset = new Date().getTimezoneOffset();
+      const res = await fetch(`${API_BASE_URL}/loans?timezoneOffset=${tzOffset}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+
+    async get(id: string): Promise<LoanDto> {
+      const tzOffset = new Date().getTimezoneOffset();
+      const res = await fetch(`${API_BASE_URL}/loans/${id}?timezoneOffset=${tzOffset}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+
+    async create(data: CreateLoanRequest): Promise<LoanDto> {
+      const res = await fetch(`${API_BASE_URL}/loans`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async updatePlan(id: string, data: UpdateLoanPlanRequest): Promise<LoanDto> {
+      const res = await fetch(`${API_BASE_URL}/loans/${id}/plan`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async payInstallment(installmentId: string, data: PayLoanInstallmentRequest): Promise<LoanDto> {
+      const res = await fetch(`${API_BASE_URL}/loans/installments/${installmentId}/pay`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+
+    async reverseAllocation(allocationId: string): Promise<LoanDto> {
+      const res = await fetch(`${API_BASE_URL}/loans/allocations/${allocationId}/reverse`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+
+    async delete(id: string): Promise<DeleteLoanResponse> {
+      const res = await fetch(`${API_BASE_URL}/loans/${id}`, {
+        method: 'DELETE',
         headers: getHeaders(),
       });
       return handleResponse(res);

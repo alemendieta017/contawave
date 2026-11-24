@@ -3,6 +3,7 @@ import {
   ReceiptText,
   Wallet,
   Handshake,
+  Landmark,
   PieChart,
   CalendarRange,
   Target,
@@ -123,6 +124,14 @@ export const navigationRegistry: NavEntry[] = [
     href: '/commitments',
     aliasHrefs: ['/compromisos', '/compromisos/nuevo'],
     icon: Handshake,
+    mobilePlacement: 'drawer',
+  },
+  {
+    id: 'loans',
+    name: 'Préstamos',
+    href: '/loans',
+    aliasHrefs: ['/prestamos', '/prestamos/nuevo'],
+    icon: Landmark,
     mobilePlacement: 'drawer',
   },
   {

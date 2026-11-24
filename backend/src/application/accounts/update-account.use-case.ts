@@ -28,6 +28,12 @@ export class UpdateAccountUseCase {
         throw new NotFoundException(`Account with ID ${accountId} not found`);
       }
 
+      if (account.isControlAccount || account.controlType === 'LOAN') {
+        throw new BadRequestException(
+          'No se puede modificar ni desactivar manualmente una cuenta de control vinculada a un módulo especializado.',
+        );
+      }
+
       if (dto.isCashOrBank !== undefined && dto.isCashOrBank !== account.isCashOrBank) {
         const entryCount = await entityManager.count(JournalEntryEntity, {
           where: { accountId },

@@ -15,6 +15,10 @@ import { ContactEntity } from './entities/contact.entity';
 import { CommitmentEntity } from './entities/commitment.entity';
 import { CommitmentInstallmentEntity } from './entities/commitment-installment.entity';
 import { CommitmentSettlementEntity } from './entities/commitment-settlement.entity';
+import { LoanEntity } from './entities/loan.entity';
+import { LoanChargeColumnEntity } from './entities/loan-charge-column.entity';
+import { LoanInstallmentEntity } from './entities/loan-installment.entity';
+import { LoanPaymentAllocationEntity } from './entities/loan-payment-allocation.entity';
 
 @Module({
   imports: [
@@ -67,6 +71,10 @@ import { CommitmentSettlementEntity } from './entities/commitment-settlement.ent
       CommitmentEntity,
       CommitmentInstallmentEntity,
       CommitmentSettlementEntity,
+      LoanEntity,
+      LoanChargeColumnEntity,
+      LoanInstallmentEntity,
+      LoanPaymentAllocationEntity,
     ]),
   ],
   exports: [TypeOrmModule],

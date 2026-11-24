@@ -18,7 +18,7 @@ async function bootstrap() {
 
   // Limpieza inicial de la base de datos para garantizar idempotencia
   await dataSource.query(
-    'TRUNCATE TABLE commitment_settlements, commitment_installments, commitments, contacts, journal_entries, transactions, account_period_balances, budget_items, budgets, periods, accounts, currencies, users RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE loan_payment_allocations, loan_installments, loan_charge_columns, loans, commitment_settlements, commitment_installments, commitments, contacts, journal_entries, transactions, account_period_balances, budget_items, budgets, periods, accounts, currencies, users RESTART IDENTITY CASCADE',
   );
   console.log('[SEEDER] Tablas limpiadas exitosamente.');
 

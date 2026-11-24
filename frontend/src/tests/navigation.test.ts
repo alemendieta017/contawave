@@ -87,10 +87,12 @@ describe('Navigation Helpers & Types', () => {
       const topLevelIds = navigationRegistry.map((e) => e.id);
       const txIdx = topLevelIds.indexOf('transactions');
       const commitmentsIdx = topLevelIds.indexOf('commitments');
+      const loansIdx = topLevelIds.indexOf('loans');
       const accountsIdx = topLevelIds.indexOf('accounts');
       expect(txIdx).toBeGreaterThanOrEqual(0);
       expect(commitmentsIdx).toBe(txIdx + 1);
-      expect(accountsIdx).toBe(commitmentsIdx + 1);
+      expect(loansIdx).toBe(commitmentsIdx + 1);
+      expect(accountsIdx).toBe(loansIdx + 1);
 
       const budgetGroup = navigationRegistry.find((e) => e.id === 'budgets');
       expect(budgetGroup).toBeDefined();

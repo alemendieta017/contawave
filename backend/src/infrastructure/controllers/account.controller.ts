@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  NotFoundException,
   Controller,
   Get,
   Post,
@@ -75,6 +77,20 @@ export class AccountController {
           (await entityManager.findOne(CurrencyEntity, { where: {} }));
         if (currency) {
           currencyId = currency.id;
+        }
+      }
+
+      if (body.parentId) {
+        const parent = await entityManager.findOne(AccountEntity, {
+          where: { id: body.parentId, userId: user.id },
+        });
+        if (!parent) {
+          throw new NotFoundException(`Parent account with ID ${body.parentId} not found`);
+        }
+        if (parent.isControlAccount || parent.controlType === 'LOAN' || parent.systemRole) {
+          throw new BadRequestException(
+            'No se pueden crear subcuentas bajo una cuenta de control o reservada del sistema.',
+          );
         }
       }
 

@@ -5,6 +5,7 @@ import { BudgetEntity } from '../../infrastructure/database/entities/budget.enti
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
 import { JournalEntryEntity } from '../../infrastructure/database/entities/journal-entry.entity';
 import { CommitmentCashFlowAdapter } from '../commitments/commitment-cash-flow.adapter';
+import { LoanCashFlowAdapter } from '../loans/loan-cash-flow.adapter';
 import {
   BudgetControlResponse,
   BudgetControlSummary,
@@ -49,6 +50,8 @@ export class GetBudgetControlUseCase {
     private readonly dataSource: DataSource,
     @Optional()
     private readonly commitmentCashFlowAdapter?: CommitmentCashFlowAdapter,
+    @Optional()
+    private readonly loanCashFlowAdapter?: LoanCashFlowAdapter,
   ) {}
 
   async execute(userId: string, periodId: string): Promise<BudgetControlResponse> {
@@ -61,13 +64,21 @@ export class GetBudgetControlUseCase {
         throw new NotFoundException(`Period with ID '${periodId}' not found.`);
       }
 
-      const scheduledItems = this.commitmentCashFlowAdapter
+      const commitmentItems = this.commitmentCashFlowAdapter
         ? (await this.commitmentCashFlowAdapter.getScheduledCashFlowItems(
             userId,
             String(period.startDate),
             String(period.endDate),
           )) || []
         : [];
+      const loanItems = this.loanCashFlowAdapter
+        ? (await this.loanCashFlowAdapter.getScheduledCashFlowItems(
+            userId,
+            String(period.startDate),
+            String(period.endDate),
+          )) || []
+        : [];
+      const scheduledItems = [...commitmentItems, ...loanItems];
 
       const committedByAccountDir = new Map<string, number>();
       for (const item of scheduledItems) {

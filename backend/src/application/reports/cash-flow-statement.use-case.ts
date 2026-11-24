@@ -9,6 +9,7 @@ import { AccountEntity } from '../../infrastructure/database/entities/account.en
 import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
 import { CommitmentSettlementEntity } from '../../infrastructure/database/entities/commitment-settlement.entity';
 import { CommitmentCashFlowAdapter } from '../commitments/commitment-cash-flow.adapter';
+import { LoanCashFlowAdapter } from '../loans/loan-cash-flow.adapter';
 
 export type ForecastPeriodStatus = 'REAL' | 'ACTUAL' | 'PROYECTADO';
 
@@ -35,6 +36,8 @@ export class CashFlowStatementForecastUseCase {
     private readonly budgetRepository: Repository<BudgetEntity>,
     @Optional()
     private readonly commitmentCashFlowAdapter?: CommitmentCashFlowAdapter,
+    @Optional()
+    private readonly loanCashFlowAdapter?: LoanCashFlowAdapter,
   ) {}
 
   private async ensureMonthlyPeriods(
@@ -320,7 +323,7 @@ export class CashFlowStatementForecastUseCase {
         });
       }
 
-      const scheduledItems: ScheduledCashFlowItem[] =
+      const commitmentItems: ScheduledCashFlowItem[] =
         this.commitmentCashFlowAdapter && periods.length > 0
           ? (await this.commitmentCashFlowAdapter.getScheduledCashFlowItems(
               userId,
@@ -328,6 +331,15 @@ export class CashFlowStatementForecastUseCase {
               String(periods[periods.length - 1].endDate),
             )) || []
           : [];
+      const loanItems: ScheduledCashFlowItem[] =
+        this.loanCashFlowAdapter && periods.length > 0
+          ? (await this.loanCashFlowAdapter.getScheduledCashFlowItems(
+              userId,
+              String(periods[0].startDate),
+              String(periods[periods.length - 1].endDate),
+            )) || []
+          : [];
+      const scheduledItems: ScheduledCashFlowItem[] = [...commitmentItems, ...loanItems];
 
       // Desglose virtual por contacto para cuentas de control (Cuentas por Cobrar / Cuentas por Pagar)
       const contactBreakdownsByAccount = new Map<string, Map<string, VirtualContactSubRow>>();

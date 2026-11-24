@@ -55,7 +55,10 @@ function getOriginMeta(
         href: originEntityId ? `/commitments/${originEntityId}` : '/commitments',
       };
     case 'LOAN':
-      return { label: 'Préstamos', href: '/commitments' };
+      return {
+        label: 'Préstamos',
+        href: originEntityId ? `/loans/${originEntityId}` : '/loans',
+      };
     case 'CREDIT_CARD':
       return { label: 'Tarjetas de Crédito', href: '/commitments' };
     case 'BALANCE_ADJUSTMENT':

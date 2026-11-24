@@ -27,6 +27,7 @@ import { BudgetController } from '../controllers/budget.controller';
 import { AuthModule } from '../auth/auth.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { CommitmentsModule } from '../commitments/commitments.module';
+import { LoansModule } from '../loans/loans.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { CommitmentsModule } from '../commitments/commitments.module';
     AuthModule,
     forwardRef(() => LedgerModule),
     CommitmentsModule,
+    LoansModule,
   ],
   providers: [
     GetBudgetsSummaryUseCase,

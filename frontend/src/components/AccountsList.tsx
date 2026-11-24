@@ -33,6 +33,9 @@ export interface AccountSummary {
   parentId?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
   systemRole?: string | null;
+  isControlAccount?: boolean;
+  controlType?: string | null;
+  linkedLoanId?: string | null;
 }
 
 export interface AccountsListProps {
@@ -148,6 +151,8 @@ export default function AccountsList({
           {ordered.map((a) => {
             const isChild = !!a.parentId;
             const isInactive = a.status === 'INACTIVE';
+            const isLockedControl = Boolean(a.systemRole) || Boolean(a.isControlAccount);
+            const isLoanControl = a.controlType === 'LOAN';
             const isMenuOpen = activeMenuId === a.id;
             const isReactivating = reactivatingId === a.id;
             const isDeletingOrDeactivating = deletingId === a.id || deactivatingId === a.id;
@@ -209,11 +214,20 @@ export default function AccountsList({
                                 ACCOUNTS_RECEIVABLE: 'Cobros',
                                 ACCOUNTS_PAYABLE: 'Pagos',
                                 CAPITAL: 'Capital',
-                                BANK_INTEREST_EXPENSE: 'Intereses',
                               } as Record<string, string>
                             )[a.systemRole] ?? a.systemRole}
                             )
                           </span>
+                        </span>
+                      )}
+
+                      {!a.systemRole && isLoanControl && (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs leading-none bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold shrink-0"
+                          title="Cuenta de pasivo gestionada desde el módulo Préstamos"
+                        >
+                          <Lock className="w-2.5 h-2.5" />
+                          <span>Préstamos</span>
                         </span>
                       )}
                     </div>
@@ -309,7 +323,18 @@ export default function AccountsList({
                             </Link>
                           )}
 
-                          {!a.systemRole &&
+                          {isLoanControl && (
+                            <Link
+                              href={a.linkedLoanId ? `/loans/${a.linkedLoanId}` : '/loans'}
+                              onClick={() => setActiveMenuId(null)}
+                              className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                            >
+                              <Landmark className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Ver detalle en Préstamos</span>
+                            </Link>
+                          )}
+
+                          {!isLockedControl &&
                             !isInactive &&
                             onAdjustBalance &&
                             (a.type === 'ASSET' || a.type === 'LIABILITY') && (
@@ -326,7 +351,7 @@ export default function AccountsList({
                               </button>
                             )}
 
-                          {!a.systemRole && onEdit && (
+                          {!isLockedControl && onEdit && (
                             <button
                               type="button"
                               onClick={() => {
@@ -340,7 +365,7 @@ export default function AccountsList({
                             </button>
                           )}
 
-                          {!a.systemRole &&
+                          {!isLockedControl &&
                             a.type !== 'EQUITY' &&
                             a.name.trim().toLowerCase() !== 'capital' &&
                             !isChild &&
@@ -358,11 +383,11 @@ export default function AccountsList({
                               </button>
                             )}
 
-                          {!a.systemRole && (
+                          {!isLockedControl && (
                             <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
                           )}
 
-                          {!a.systemRole &&
+                          {!isLockedControl &&
                             (isInactive
                               ? onReactivate && (
                                   <button
@@ -393,7 +418,7 @@ export default function AccountsList({
                                   </button>
                                 ))}
 
-                          {!a.systemRole && onDelete && (
+                          {!isLockedControl && onDelete && (
                             <button
                               type="button"
                               onClick={() => {

@@ -2,6 +2,7 @@ import { EntityManager } from 'typeorm';
 import { baseScenario } from './base.scenario';
 import { LedgerBuilder } from '../helpers/ledger-builder';
 import { seedDefaultCommitments } from '../helpers/commitments-seeder';
+import { seedDefaultLoans } from '../helpers/loans-seeder';
 import { PeriodEntity } from '../../entities/period.entity';
 import { AccountEntity } from '../../entities/account.entity';
 import { BudgetEntity } from '../../entities/budget.entity';
@@ -49,8 +50,8 @@ export async function defaultScenario(
     {
       name: 'Intereses y Cargos Financieros',
       type: 'EXPENSE',
-      systemRole: 'BANK_INTEREST_EXPENSE',
     },
+    { name: 'Seguros', type: 'EXPENSE' },
 
     // Activos Líquidos y de Inversión
     { name: 'Banco Principal', type: 'ASSET', isCashOrBank: true },
@@ -323,6 +324,7 @@ export async function defaultScenario(
   ]);
 
   await seedDefaultCommitments(em, user.id, accountMap, builder, balanceUpdateService);
+  await seedDefaultLoans(em, user.id, baseCurrency, accountMap, builder, balanceUpdateService);
 
   console.log('[SEED] Escenario "default" sembrado exitosamente.');
 

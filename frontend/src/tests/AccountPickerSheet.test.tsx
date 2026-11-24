@@ -499,4 +499,56 @@ describe('AccountPickerSheet Component', () => {
       expect(onSelect).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('Financial Expenses Prioritization', () => {
+    test('prioritizes financial expenses with scope toggle and allows searching across all expenses', () => {
+      const expenseAccounts: AccountOption[] = [
+        ...mockAccounts,
+        {
+          id: 'acc-fin-int',
+          name: 'Intereses y Cargos Financieros',
+          type: AccountType.EXPENSE,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'acc-fin-seg',
+          name: 'Seguros',
+          type: AccountType.EXPENSE,
+          status: 'ACTIVE',
+        },
+      ];
+
+      render(
+        <AccountPickerSheet
+          {...defaultProps}
+          accounts={expenseAccounts}
+          filterMode="EXPENSES"
+          prioritizeFinancialExpenses={true}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('combobox'));
+
+      const finScopeBtn = screen.getByTestId('expense-scope-fin');
+      const allScopeBtn = screen.getByTestId('expense-scope-all');
+      expect(finScopeBtn).toHaveTextContent('Financieras');
+      expect(allScopeBtn).toHaveTextContent('Todas las de gasto');
+
+      expect(screen.getByTestId('account-option-acc-fin-int')).toBeInTheDocument();
+      expect(screen.getByTestId('account-option-acc-fin-seg')).toBeInTheDocument();
+      expect(screen.queryByTestId('account-option-acc-5')).not.toBeInTheDocument();
+
+      // Switch to all expenses shows Combustibles
+      fireEvent.click(allScopeBtn);
+      expect(screen.getByTestId('account-option-acc-5')).toBeInTheDocument();
+
+      // Switch back to Financieras and search 'Combust' reveals it across all expenses
+      fireEvent.click(finScopeBtn);
+      expect(screen.queryByTestId('account-option-acc-5')).not.toBeInTheDocument();
+
+      const searchInput = screen.getByPlaceholderText('Buscar por nombre...');
+      fireEvent.change(searchInput, { target: { value: 'Combust' } });
+      expect(screen.getByTestId('account-option-acc-5')).toBeInTheDocument();
+    });
+  });
 });

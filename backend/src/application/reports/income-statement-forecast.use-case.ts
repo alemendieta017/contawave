@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ScheduledCashFlowItem } from '@sistema-contable/shared';
 import { PeriodEntity } from '../../infrastructure/database/entities/period.entity';
 import { BudgetEntity } from '../../infrastructure/database/entities/budget.entity';
 import { AccountPeriodBalanceEntity } from '../../infrastructure/database/entities/account-period-balance.entity';
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
+import { LoanCashFlowAdapter } from '../loans/loan-cash-flow.adapter';
 
 @Injectable()
 export class IncomeStatementForecastUseCase {
@@ -15,6 +17,8 @@ export class IncomeStatementForecastUseCase {
     private readonly balanceRepository: Repository<AccountPeriodBalanceEntity>,
     @InjectRepository(BudgetEntity)
     private readonly budgetRepository: Repository<BudgetEntity>,
+    @Optional()
+    private readonly loanCashFlowAdapter?: LoanCashFlowAdapter,
   ) {}
 
   private async ensureMonthlyPeriods(
@@ -301,11 +305,35 @@ export class IncomeStatementForecastUseCase {
         });
       }
 
+      const scheduledLoanItems: ScheduledCashFlowItem[] =
+        this.loanCashFlowAdapter && periods.length > 0
+          ? (await this.loanCashFlowAdapter.getScheduledCashFlowItems(
+              userId,
+              String(periods[0].startDate),
+              String(periods[periods.length - 1].endDate),
+            )) || []
+          : [];
+
+      const loanExpenseByPeriodAccount = new Map<string, Map<string, number>>();
+      for (const item of scheduledLoanItems) {
+        if (item.sourceType !== 'LOAN' || item.direction !== 'OUTFLOW') continue;
+        const accForecast = accountsMap.get(item.categoryAccountId);
+        if (!accForecast || accForecast.accountType !== 'EXPENSE') continue;
+        const pName = item.periodName || item.dueDate.substring(0, 7);
+        let accMap = loanExpenseByPeriodAccount.get(pName);
+        if (!accMap) {
+          accMap = new Map<string, number>();
+          loanExpenseByPeriodAccount.set(pName, accMap);
+        }
+        accMap.set(item.categoryAccountId, (accMap.get(item.categoryAccountId) || 0) + item.amount);
+      }
+
       const months = [];
 
       for (const rawPeriod of periods) {
         const period = rawPeriod as PeriodEntity & { __isSynthetic?: boolean };
         const isReal = period.startDate <= todayStr;
+        const isCurrentMonth = period.startDate <= todayStr && todayStr <= period.endDate;
 
         let income = 0;
         let expense = 0;
@@ -338,6 +366,18 @@ export class IncomeStatementForecastUseCase {
               accForecast.values[period.id] = change;
             }
           }
+
+          if (isCurrentMonth) {
+            const scheduledPeriodMap = loanExpenseByPeriodAccount.get(period.name);
+            if (scheduledPeriodMap) {
+              for (const [accId, scheduledAmt] of scheduledPeriodMap.entries()) {
+                const accForecast = accountsMap.get(accId);
+                if (!accForecast || scheduledAmt <= 0) continue;
+                accForecast.values[period.id] = (accForecast.values[period.id] || 0) + scheduledAmt;
+                expense += scheduledAmt;
+              }
+            }
+          }
         } else {
           const budget = period.__isSynthetic
             ? null
@@ -361,6 +401,20 @@ export class IncomeStatementForecastUseCase {
               const accForecast = accountsMap.get(accId);
               if (accForecast) {
                 accForecast.values[period.id] = amount;
+              }
+            }
+          }
+
+          const scheduledPeriodMap = loanExpenseByPeriodAccount.get(period.name);
+          if (scheduledPeriodMap) {
+            for (const [accId, scheduledAmt] of scheduledPeriodMap.entries()) {
+              const accForecast = accountsMap.get(accId);
+              if (!accForecast || scheduledAmt <= 0) continue;
+              const prevVal = accForecast.values[period.id] || 0;
+              const nextVal = Math.max(prevVal, scheduledAmt);
+              if (nextVal > prevVal) {
+                expense += nextVal - prevVal;
+                accForecast.values[period.id] = nextVal;
               }
             }
           }

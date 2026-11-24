@@ -1,5 +1,6 @@
 import React from 'react';
 import '@testing-library/jest-dom';
+import { AccountType } from '@sistema-contable/shared';
 import { render, screen, fireEvent } from '@testing-library/react';
 import AccountsList from '../components/AccountsList';
 
@@ -254,5 +255,37 @@ describe('AccountsList (US1 & US2)', () => {
     fireEvent.click(screen.getByTestId('menu-btn-acc-ar'));
     const link = screen.getByRole('link', { name: /Ver desglose en Pagos y Cobros/i });
     expect(link).toHaveAttribute('href', '/commitments');
+  });
+
+  it('shows Préstamos badge, links to loan detail, and locks mutations for LOAN control accounts', () => {
+    const loanAccounts = [
+      {
+        id: 'acc-loan-1',
+        name: 'Préstamo Auto Itaú',
+        type: AccountType.LIABILITY,
+        balance: -12000000,
+        currencyCode: 'PYG',
+        currencySymbol: '₲',
+        status: 'ACTIVE' as const,
+        isCashOrBank: false,
+        systemRole: null,
+        isControlAccount: true,
+        controlType: 'LOAN',
+        linkedLoanId: 'loan-1',
+      },
+    ];
+
+    render(<AccountsList accounts={loanAccounts} />);
+
+    expect(screen.getByText('Préstamos')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('menu-btn-acc-loan-1'));
+    const link = screen.getByRole('link', { name: /Ver detalle en Préstamos/i });
+    expect(link).toHaveAttribute('href', '/loans/loan-1');
+    expect(screen.queryByRole('button', { name: /Editar|Renombrar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Desactivar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ajustar saldo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Subcuenta/i })).not.toBeInTheDocument();
   });
 });

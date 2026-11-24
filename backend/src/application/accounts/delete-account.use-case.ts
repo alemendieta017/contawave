@@ -24,6 +24,12 @@ export class DeleteAccountUseCase {
         throw new NotFoundException(`Account with ID ${accountId} not found`);
       }
 
+      if (account.isControlAccount || account.controlType === 'LOAN') {
+        throw new BadRequestException(
+          'No se puede eliminar manualmente una cuenta de control vinculada a un módulo especializado.',
+        );
+      }
+
       // Check if there are journal entries or child accounts associated
       const [entriesCount, childrenCount] = await Promise.all([
         entityManager.count(JournalEntryEntity, {

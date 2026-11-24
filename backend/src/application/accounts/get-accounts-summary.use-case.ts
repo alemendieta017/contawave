@@ -4,6 +4,7 @@ import { AccountEntity } from '../../infrastructure/database/entities/account.en
 import { JournalEntryEntity } from '../../infrastructure/database/entities/journal-entry.entity';
 import { PeriodEntity } from '../../infrastructure/database/entities/period.entity';
 import { AccountPeriodBalanceEntity } from '../../infrastructure/database/entities/account-period-balance.entity';
+import { LoanEntity } from '../../infrastructure/database/entities/loan.entity';
 
 @Injectable()
 export class GetAccountsSummaryUseCase {
@@ -16,6 +17,17 @@ export class GetAccountsSummaryUseCase {
         where: { userId },
         relations: ['currency'],
       });
+
+      // 1b. Map loan control accounts to their loan ID for direct UI navigation
+      const loanIdByLiabilityAccountId = new Map<string, string>();
+      if (accounts.some((acc) => acc.controlType === 'LOAN')) {
+        const userLoans = (await entityManager.find(LoanEntity, { where: { userId } })) || [];
+        for (const loan of userLoans) {
+          if (loan?.id && loan?.liabilityAccountId) {
+            loanIdByLiabilityAccountId.set(loan.liabilityAccountId, loan.id);
+          }
+        }
+      }
 
       // 2. Find the latest closed accounting period for this user
       const latestClosedPeriod = await entityManager
@@ -109,6 +121,7 @@ export class GetAccountsSummaryUseCase {
           systemRole: acc.systemRole || null,
           isControlAccount: Boolean(acc.isControlAccount),
           controlType: acc.controlType || null,
+          linkedLoanId: loanIdByLiabilityAccountId.get(acc.id) || null,
           balance,
         };
       });

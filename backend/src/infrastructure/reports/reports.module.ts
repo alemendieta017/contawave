@@ -20,6 +20,7 @@ import { NetWorthEvolutionUseCase } from '../../application/reports/net-worth-ev
 import { ReportsController } from '../controllers/reports.controller';
 import { AuthModule } from '../auth/auth.module';
 import { CommitmentsModule } from '../commitments/commitments.module';
+import { LoansModule } from '../loans/loans.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { CommitmentsModule } from '../commitments/commitments.module';
     ]),
     AuthModule,
     CommitmentsModule,
+    LoansModule,
   ],
   providers: [
     GetCategoryStatisticsUseCase,

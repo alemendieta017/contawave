@@ -33,6 +33,25 @@ export interface DoubleEntryPostResult {
   creditEntry: JournalEntryEntity;
 }
 
+export interface MultiEntryItem {
+  accountId: string;
+  entryType: 'DEBIT' | 'CREDIT';
+  amountBase: number;
+}
+
+export interface MultiEntryPostParams {
+  accountingDate: string;
+  description: string;
+  entries: MultiEntryItem[];
+  originModule?: TransactionOriginModule;
+  originEntityId?: string | null;
+}
+
+export interface MultiEntryPostResult {
+  transaction: TransactionEntity;
+  entries: JournalEntryEntity[];
+}
+
 @Injectable()
 export class SystemAccountService {
   constructor(
@@ -212,6 +231,132 @@ export class SystemAccountService {
     ]);
 
     return { transaction: savedTx, debitEntry, creditEntry };
+  }
+
+  async resolveUniqueAccountName(
+    em: EntityManager,
+    userId: string,
+    desiredName: string,
+    excludeAccountId?: string,
+  ): Promise<string> {
+    const trimmedBase = desiredName.trim() || 'Préstamo';
+    const base = trimmedBase.slice(0, 120);
+    const existingAccounts = (await em.find(AccountEntity, { where: { userId } })) || [];
+    const existingNames = new Set(
+      existingAccounts
+        .filter((a) => !excludeAccountId || a.id !== excludeAccountId)
+        .map((a) => a.name.trim().toLowerCase()),
+    );
+
+    if (!existingNames.has(base.toLowerCase())) {
+      return base;
+    }
+
+    let suffix = 2;
+    while (suffix < 10000) {
+      const suffixTag = ` (${suffix})`;
+      const candidate = `${base.slice(0, 120 - suffixTag.length).trimEnd()}${suffixTag}`;
+      if (!existingNames.has(candidate.toLowerCase())) {
+        return candidate;
+      }
+      suffix += 1;
+    }
+
+    return `${base.slice(0, 110)} (${Date.now().toString().slice(-6)})`;
+  }
+
+  async postMultiEntry(
+    em: EntityManager,
+    userId: string,
+    params: MultiEntryPostParams,
+  ): Promise<MultiEntryPostResult> {
+    if (!params.entries || params.entries.length < 2) {
+      throw new BadRequestException('El asiento compuesto debe incluir al menos 2 líneas');
+    }
+
+    for (const item of params.entries) {
+      if (item.amountBase <= 0) {
+        throw new BadRequestException('Cada línea del asiento debe ser mayor a 0');
+      }
+    }
+
+    await this.ensurePeriodService.ensurePeriod(em, userId, params.accountingDate.substring(0, 7));
+
+    // Lock accounts in deterministic sorted order to prevent deadlocks under concurrent SERIALIZABLE writes
+    const uniqueAccountIds = Array.from(new Set(params.entries.map((e) => e.accountId))).sort();
+    for (const accId of uniqueAccountIds) {
+      const acc = await em.findOne(AccountEntity, {
+        where: { id: accId, userId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!acc) {
+        throw new NotFoundException(`Cuenta con ID ${accId} no encontrada`);
+      }
+      if (acc.status === 'INACTIVE') {
+        throw new BadRequestException(`La cuenta ${acc.name} está inactiva`);
+      }
+    }
+
+    const payloads = [];
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    for (const item of params.entries) {
+      const payload = await this.buildJournalEntryPayload(
+        em,
+        userId,
+        item.accountId,
+        item.entryType,
+        item.amountBase,
+      );
+      if (item.entryType === 'DEBIT') {
+        totalDebit += payload.amountBase;
+      } else {
+        totalCredit += payload.amountBase;
+      }
+      payloads.push(payload);
+    }
+
+    if (Math.abs(totalDebit - totalCredit) > 0.0001) {
+      throw new BadRequestException('El asiento contable no balancea entre Debe y Haber');
+    }
+
+    const tx = em.create(TransactionEntity, {
+      userId,
+      accountingDate: params.accountingDate,
+      description: params.description,
+      status: 'POSTED',
+      originModule: params.originModule ?? 'MANUAL',
+      originEntityId: params.originEntityId ?? null,
+    });
+    const savedTx = await em.save(TransactionEntity, tx);
+
+    const savedEntries: JournalEntryEntity[] = [];
+    for (const payload of payloads) {
+      const savedEntry = await em.save(
+        JournalEntryEntity,
+        em.create(JournalEntryEntity, {
+          transactionId: savedTx.id,
+          ...payload,
+        }),
+      );
+      savedEntries.push(savedEntry);
+    }
+
+    const balanceChanges = savedEntries.map((entry) => ({
+      accountId: entry.accountId,
+      debitDiff: entry.entryType === 'DEBIT' ? Number(entry.amountBase) : 0,
+      creditDiff: entry.entryType === 'CREDIT' ? Number(entry.amountBase) : 0,
+    }));
+
+    await this.balanceUpdateService.updateBalances(
+      em,
+      userId,
+      params.accountingDate,
+      balanceChanges,
+    );
+
+    return { transaction: savedTx, entries: savedEntries };
   }
 
   async rebuildTransactionEntries(

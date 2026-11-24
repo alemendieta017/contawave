@@ -12,6 +12,7 @@ export interface AccountOption {
   systemRole?: string | null;
   isControlAccount?: boolean;
   controlType?: string | null;
+  linkedLoanId?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
   balance?: number;
   isCashOrBank?: boolean;

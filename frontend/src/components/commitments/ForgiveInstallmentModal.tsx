@@ -39,7 +39,7 @@ export default function ForgiveInstallmentModal({
   );
 
   const defaultAdj =
-    adjustmentOptions.find((a) => a.systemRole === 'BANK_INTEREST_EXPENSE') ||
+    adjustmentOptions.find((a) => a.name.toLowerCase().includes('intereses')) ||
     adjustmentOptions.find((a) => a.systemRole === 'CAPITAL') ||
     adjustmentOptions[0];
   const defaultAdjId = defaultAdj?.id || '';

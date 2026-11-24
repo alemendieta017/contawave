@@ -218,9 +218,13 @@ function TransactionPageContent() {
               ? tx.originEntityId
                 ? `/commitments/${tx.originEntityId}`
                 : '/commitments'
-              : tx.originModule === 'BALANCE_ADJUSTMENT'
-                ? '/accounts'
-                : '/commitments';
+              : tx.originModule === 'LOAN'
+                ? tx.originEntityId
+                  ? `/loans/${tx.originEntityId}`
+                  : '/loans'
+                : tx.originModule === 'BALANCE_ADJUSTMENT'
+                  ? '/accounts'
+                  : '/commitments';
           const originLabel =
             tx.originModule === 'COMMITMENT'
               ? 'Pagos y Cobros'

@@ -20,6 +20,8 @@ interface ParentAccount {
   type: string;
   parentId?: string | null;
   systemRole?: string | null;
+  isControlAccount?: boolean;
+  controlType?: string | null;
 }
 
 interface Account {
@@ -199,12 +201,13 @@ export default function AccountModal({
     };
   }, [isTypeMenuOpen]);
 
-  // Filter possible parent accounts (same type, no parent itself, and not system/capital/equity)
+  // Filter possible parent accounts (same type, no parent itself, and not system/control/capital/equity)
   const filteredParents = parentCandidates.filter(
     (a) =>
       a.type === type &&
       !a.parentId &&
       !a.systemRole &&
+      !a.isControlAccount &&
       a.type !== AccountType.EQUITY &&
       a.name.trim().toLowerCase() !== 'capital',
   );

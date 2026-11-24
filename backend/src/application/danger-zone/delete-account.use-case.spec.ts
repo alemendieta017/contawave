@@ -9,6 +9,10 @@ import { DeleteUserAccountUseCase } from './delete-account.use-case';
 import { UserEntity } from '../../infrastructure/database/entities/user.entity';
 import { AccountEntity } from '../../infrastructure/database/entities/account.entity';
 import { BudgetEntity } from '../../infrastructure/database/entities/budget.entity';
+import { LoanChargeColumnEntity } from '../../infrastructure/database/entities/loan-charge-column.entity';
+import { LoanEntity } from '../../infrastructure/database/entities/loan.entity';
+import { LoanInstallmentEntity } from '../../infrastructure/database/entities/loan-installment.entity';
+import { LoanPaymentAllocationEntity } from '../../infrastructure/database/entities/loan-payment-allocation.entity';
 import { TransactionEntity } from '../../infrastructure/database/entities/transaction.entity';
 import { PasswordResetTokenEntity } from '../../infrastructure/database/entities/password-reset-token.entity';
 
@@ -104,9 +108,13 @@ describe('DeleteUserAccountUseCase (US3)', () => {
 
     jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true) as any);
 
+    queryBuilderMock.getMany = jest.fn().mockResolvedValue([{ id: 'li-1' }]);
     entityManagerMock.find.mockImplementation((entityClass: any) => {
       if (entityClass === BudgetEntity) {
         return Promise.resolve([{ id: 'b-1' }]);
+      }
+      if (entityClass === LoanEntity) {
+        return Promise.resolve([{ id: 'loan-1' }]);
       }
       if (entityClass === AccountEntity) {
         return Promise.resolve([{ id: 'acc-1' }]);
@@ -125,6 +133,31 @@ describe('DeleteUserAccountUseCase (US3)', () => {
     expect(response.success).toBe(true);
     expect(response.action).toBe(DangerZoneAction.DELETE_ACCOUNT);
     expect(response.message).toContain('eliminados permanentemente');
+
+    // Verify ordered Loans purge before Transactions & Accounts deletion
+    const allDeletedTargets: Array<{ entity: unknown; order: number }> = [
+      ...entityManagerMock.delete.mock.calls.map((c: unknown[], idx: number) => ({
+        entity: c[0],
+        order: entityManagerMock.delete.mock.invocationCallOrder[idx],
+      })),
+      ...queryBuilderMock.from.mock.calls.map((c: unknown[], idx: number) => ({
+        entity: c[0],
+        order: queryBuilderMock.from.mock.invocationCallOrder[idx],
+      })),
+    ];
+    const firstOrderOf = (target: unknown) =>
+      allDeletedTargets.find((entry) => entry.entity === target)?.order ?? -1;
+
+    expect(firstOrderOf(LoanPaymentAllocationEntity)).toBeGreaterThan(-1);
+    expect(firstOrderOf(LoanInstallmentEntity)).toBeGreaterThan(
+      firstOrderOf(LoanPaymentAllocationEntity),
+    );
+    expect(firstOrderOf(LoanChargeColumnEntity)).toBeGreaterThan(
+      firstOrderOf(LoanInstallmentEntity),
+    );
+    expect(firstOrderOf(LoanEntity)).toBeGreaterThan(firstOrderOf(LoanChargeColumnEntity));
+    expect(firstOrderOf(TransactionEntity)).toBeGreaterThan(firstOrderOf(LoanEntity));
+    expect(firstOrderOf(AccountEntity)).toBeGreaterThan(firstOrderOf(TransactionEntity));
 
     // Verify user entity and tokens deletion
     expect(entityManagerMock.delete).toHaveBeenCalledWith(PasswordResetTokenEntity, {

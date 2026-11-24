@@ -6,6 +6,7 @@ import { BudgetModule } from './infrastructure/budgets/budget.module';
 import { ReportsModule } from './infrastructure/reports/reports.module';
 import { BackupModule } from './infrastructure/backup/backup.module';
 import { CommitmentsModule } from './infrastructure/commitments/commitments.module';
+import { LoansModule } from './infrastructure/loans/loans.module';
 
 import { DangerZoneModule } from './infrastructure/danger-zone/danger-zone.module';
 
@@ -17,6 +18,7 @@ import { DangerZoneModule } from './infrastructure/danger-zone/danger-zone.modul
     BudgetModule,
     ReportsModule,
     CommitmentsModule,
+    LoansModule,
     BackupModule,
     DangerZoneModule,
   ],
