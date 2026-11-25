@@ -16,8 +16,8 @@ interface PieChartProps {
 }
 
 const colors = [
-  '#7c3aed', // Vivid Purple
-  '#b56ce2', // Soft Orchid / Lavender
+  'var(--color-brand-vivid, #9333ea)', // Brand Vivid Orchid
+  'var(--color-brand-wave, #c85fe0)', // Brand Wave Orchid
   '#231238', // Deep Royal Purple
   '#10b981', // Emerald Teal
   '#f59e0b', // Amber
